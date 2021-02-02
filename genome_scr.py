@@ -1,9 +1,3 @@
-##
-#---------------------------------------------------------------------
-# SERVER only input all files output MeH matrix
-# Jan 26 
-# FINAL
-#---------------------------------------------------------------------
 
 import random
 import math
@@ -22,27 +16,6 @@ import time as t
 
 #---------------------------------------
 
-# Count # of windows with enough reads for complete/impute
-def coverage(methbin,complete,w):
-    count=0
-    tot = 0
-    meth=methbin.iloc[:,methbin.columns!='Qname']
-    if len(meth.columns)>=w:
-        for i in range(len(meth.columns)-w+1):
-            # extract a window
-            temp = meth.iloc[:,i:i+w].copy()
-            #print(temp)
-            tot = tot+1
-            if (enough_reads(window=temp,complete=complete,w=w)):
-                count=count+1
-                #toprint=temp.notnull().sum(axis=1)>=w
-                #print(toprint.sum())
-        #print(count)
-        #print(tot)
-        return count/tot*100
-    else: 
-        return 0
-
 # Check whether a window has enough reads for complete/impute
 def enough_reads(window,w,complete):
     temp=np.isnan(window).sum(axis=1)==0
@@ -52,7 +25,6 @@ def enough_reads(window,w,complete):
         tempw1=np.isnan(window).sum(axis=1)==1
         return temp.sum()>=2**(w-1) and tempw1.sum()>0
     
-
 def impute(window,w):
     full_ind=np.where(np.isnan(window).sum(axis=1)==0)[0]
     part_ind=np.where(np.isnan(window).sum(axis=1)==1)[0]
@@ -77,14 +49,9 @@ def impute(window,w):
             #print("s = ",np.float64(s))
     return window 
    
-
 def getcomplete(window,w):
     temp=np.isnan(window).sum(axis=1)==0
     mat=window[np.where(temp)[0],:]
-    #temp=window.notnull().sum(axis=1)>=w
-    #mat=window.iloc[np.where(temp)[0],:]
-    #else:
-    #    temp=mat.notnull().sum(axis=1)>=w-1
     return mat
 
 def PattoDis(mat):
@@ -134,7 +101,6 @@ def window_summ(pat,start,dis,chrom):
                     'p31':prob[30],'p32':prob[31],'dis':dis})
     return out
 
-
 def MeHperwindow(pat,start,dis,chrom,D,all_pos,w,q=2): 
     prob=np.zeros((2**w,1))
     m=np.shape(pat)[0]
@@ -147,18 +113,15 @@ def MeHperwindow(pat,start,dis,chrom,D,all_pos,w,q=2):
         prob[i]=count
     interaction=np.multiply.outer(prob/m,prob/m).reshape((2**w,2**w))
     Q=sum(sum(D*interaction))
-    #print("Q =",Q)
     if Q==0:
         div=0
     else:
         div=(sum(sum(D*(interaction**2)))/Q)**(-0.5)
-        #div=(sum(sum(D*(interaction**2)))/Q)**(1/(2*(1-q)))
     
     out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':div,'dis':dis}, index=[0])    
     return out
     
 def PW_H(pat,q=2,w=3,dist=Ham_d,prop=False): 
-    
     all_pos=np.zeros((2**w,w))
     for i in range(w): 
         all_pos[:,i]=np.linspace(0,2**w-1,2**w)%(2**(i+1))//(2**i)
@@ -166,7 +129,6 @@ def PW_H(pat,q=2,w=3,dist=Ham_d,prop=False):
     #print(prob)
     if not prop:
         m=np.shape(pat)[0]
-        
         for i in range(2**w): 
             count = 0
             for j in range(m):
@@ -188,7 +150,6 @@ def PW_H(pat,q=2,w=3,dist=Ham_d,prop=False):
         return div
     
 def Ab_H(pat,q=2,w=3,dist=Ham_d,prop=False): 
-    
     all_pos=np.zeros((2**w,w))
     for i in range(w): 
         all_pos[:,i]=np.linspace(0,2**w-1,2**w)%(2**(i+1))//(2**i)
@@ -196,24 +157,20 @@ def Ab_H(pat,q=2,w=3,dist=Ham_d,prop=False):
     #print(prob)
     if not prop:
         m=np.shape(pat)[0]
-        
         for i in range(2**w): 
             count = 0
             for j in range(m):
                 if (all_pos[i,:]==pat.iloc[j,:]).sum()==w:
                     count+=1
                     #print(count)
-            prob[i]=count
-            
+            prob[i]=count     
     if prop:
         prob=pat
-    
     m=prob.sum(axis=0)
     out=(((prob/m)**2).sum(axis=0))**(1/(2*(1-q)))
     return np.float64(out)
 
 def Ent_H(pat,q=2,w=3,dist=Ham_d,prop=False): 
-    
     if not prop:
         all_pos=np.zeros((2**w,w))
         for i in range(w): 
@@ -256,10 +213,8 @@ def Epi_H(pat,q=2,w=3,dist=Ham_d,prop=False):
                     count+=1
                     #print(count)
             prob[i]=count
-            
     if prop:
         prob=pat
-    
     m=prob.sum(axis=0)
     out=1-((prob/m)**2).sum(axis=0)
     #print(type(np.float64(out)))
@@ -392,7 +347,6 @@ def genome_scr(bamfile,w,fa,silence=False):
     #directory = "Outputs/" + str(sample) + '.csv' #original filename of .bams
     samfile = pysam.AlignmentFile("MeHdata/%s.bam" % (filename), "rb")
     fastafile = pysam.FastaFile('MeHdata/%s.fa' % fa)
-        
     aggreC = pd.DataFrame(columns=['Qname'])
     Result1 = pd.DataFrame(columns=['chrom','pos','MeH','dis'])
     never = True
@@ -401,9 +355,7 @@ def genome_scr(bamfile,w,fa,silence=False):
     for i in range(w): 
         all_pos[:,i]=np.linspace(0,2**w-1,2**w)%(2**(i+1))//(2**i)
     D=PattoDis(pd.DataFrame(all_pos))
-    
     start=datetime.datetime.now()
-    
     for pileupcolumn in samfile.pileup():
         chrom = pileupcolumn.reference_name
         if not silence: :
@@ -451,7 +403,6 @@ def genome_scr(bamfile,w,fa,silence=False):
                     toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
                                     dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
                                     chrom=chrom,D=D,all_pos=all_pos,w=w)
-                    #print(toappend)
                     Result1=Result1.append(toappend)
             aggreC = aggreC.drop(meth.columns[0:1],axis=1)
             aggreC.dropna(axis = 0, thresh=2, inplace = True)
@@ -459,7 +410,6 @@ def genome_scr(bamfile,w,fa,silence=False):
         #------------------
         #  SECONDARY CASE
         #------------------
-
         if (aggreC.shape[1] == (3*w-1)):
             aggreC = aggreC.replace(['C','G'],1)
             aggreC = aggreC.replace(['A','T'],0)
@@ -491,17 +441,11 @@ def genome_scr(bamfile,w,fa,silence=False):
                         Result1.to_csv(r"MeHdata/gs_%s.csv"%(filename),index = False, header=True)
                         if not silence: 
                             print("Checkpoint. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,Result1.shape[0],pileupcolumn.pos))
-
             aggreC = aggreC.drop(meth.columns[0:w],axis=1)
-            aggreC.dropna(axis = 0, thresh=2, inplace = True)
-            #print(aggreC)
-            #total += w
-                     
+            aggreC.dropna(axis = 0, thresh=2, inplace = True)      
     if Result1.shape[0]>0:   
         Result1.to_csv(r"MeHdata/gs_%s.csv"%(filename),index = False, header=True)
         print("Done. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,Result1.shape[0],pileupcolumn.pos))
-            
-    #samfile.close()  
     
 def split_bam(samplenames,Folder): 
         # get bam size
@@ -569,7 +513,12 @@ if __name__ == "__main__":
             fa = filename
         if file_extension == '.bam':
             bam_list.append(filename)
-    
+            
+    if 'cores' in args: 
+        num_cores = args.cores
+    else:
+        num_cores = 4
+        
     Parallel(n_jobs=num_cores)(delayed(split_bam)(bamfile,Folder=Folder) for bamfile in bam_list)
     
     spbam_list = []
