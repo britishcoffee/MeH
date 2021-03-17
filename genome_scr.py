@@ -1,4 +1,4 @@
-##
+
 #---------------------------------------------------------------------
 # SERVER only input all files (.bam and .fa) output MeH matrix in .csv
 # March 10, 2021
@@ -82,10 +82,6 @@ def impute(window,w):
 def getcomplete(window,w):
     temp=np.isnan(window).sum(axis=1)==0
     mat=window[np.where(temp)[0],:]
-    #temp=window.notnull().sum(axis=1)>=w
-    #mat=window.iloc[np.where(temp)[0],:]
-    #else:
-    #    temp=mat.notnull().sum(axis=1)>=w-1
     return mat
 
 def PattoDis(mat,dist=1):
@@ -113,24 +109,6 @@ def WDK_d(pat1,pat2):
             d+=s
     return d
 
-
-def binary(read):
-    w=read.shape[0]
-    if w>1:
-        out=read[0]+2*read[1]
-    if w>2:
-        out+=4*read[2]
-    if w>3:
-        out+=8*read[3]
-    if w>4:
-        out+=16*read[3]
-    if w>5:
-        out+=32*read[3]
-    unique, counts = np.unique(out, return_counts=True)
-    return(counts)
-
-
-
 # input a window of w CGs and output a list of proportions with starting genomic location and genomic distance across
 def window_summ(pat,start,dis,chrom): 
     m=np.shape(pat)[0]
@@ -149,7 +127,6 @@ def window_summ(pat,start,dis,chrom):
                 count+=1
                 #print(count)
         prob[i]=count
-
 
     if d==3:
         out=pd.DataFrame({'chrom':chrom,'pos':start,'p1':prob[0],'p2':prob[1],'p3':prob[2],'p4':prob[3],\
