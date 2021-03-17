@@ -1,7 +1,7 @@
 ##
 #---------------------------------------------------------------------
-# SERVER only input all files output MeH matrix
-# Jan 26 
+# SERVER only input all files (.bam and .fa) output MeH matrix in .csv
+# March 10, 2021
 # FINAL
 #---------------------------------------------------------------------
 
@@ -14,6 +14,7 @@ import pandas as pd
 import numpy as np
 import datetime
 import time as t
+from collections import Counter, defaultdict, OrderedDict
 
 
 #---------------------------------------
@@ -112,6 +113,24 @@ def WDK_d(pat1,pat2):
             d+=s
     return d
 
+
+def binary(read):
+    w=read.shape[0]
+    if w>1:
+        out=read[0]+2*read[1]
+    if w>2:
+        out+=4*read[2]
+    if w>3:
+        out+=8*read[3]
+    if w>4:
+        out+=16*read[3]
+    if w>5:
+        out+=32*read[3]
+    unique, counts = np.unique(out, return_counts=True)
+    return(counts)
+
+
+
 # input a window of w CGs and output a list of proportions with starting genomic location and genomic distance across
 def window_summ(pat,start,dis,chrom): 
     m=np.shape(pat)[0]
@@ -120,6 +139,7 @@ def window_summ(pat,start,dis,chrom):
     for i in range(d): 
         all_pos[:,i]=np.linspace(0,2**d-1,2**d)%(2**(i+1))//(2**i)
     #print(all_pos)
+    
     prob=np.zeros((2**d,1))
     #print(prob)
     for i in range(2**d): 
@@ -129,6 +149,8 @@ def window_summ(pat,start,dis,chrom):
                 count+=1
                 #print(count)
         prob[i]=count
+
+
     if d==3:
         out=pd.DataFrame({'chrom':chrom,'pos':start,'p1':prob[0],'p2':prob[1],'p3':prob[2],'p4':prob[3],\
                     'p5':prob[4],'p6':prob[5],'p7':prob[6],'p8':prob[7],'dis':dis})    
@@ -162,19 +184,24 @@ def window_summ(pat,start,dis,chrom):
     return out
 
 
-def MeHperwindow(pat,start,dis,chrom,D,all_pos,w,MeH=2,dist=1): 
+def MeHperwindow(pat,start,dis,chrom,D,all_pos_key,w,ML,depth,MeH=2,dist=1): 
     count=np.zeros((2**w,1))
     m=np.shape(pat)[0]
     #print(prob)
-    for i in range(2**w): 
-        c = 0
-        for j in range(m):
-            if (all_pos[i,:]==pat.iloc[j,:]).sum()==w:
-                c+=1
-        count[i]=c
-    if MeH==1: 
-        div=(((count/m)**2).sum(axis=0))**(-0.5)
-    elif MeH==2: 
+    #for i in range(2**w): 
+    #    c = 0
+    #    for j in range(m):
+    #        if (all_pos[i,:]==pat.iloc[j,:]).sum()==w:
+    #            c+=1
+    #    count[i]=c
+    pat=np.array(pat)
+    pat = Counter([str(i[0])+str(i[1])+str(i[2])+str(i[3]) for i in pat.astype(int).tolist()])
+    
+    count=np.array([float(pat[i]) for i in all_pos_key])
+    
+    if MeH==1:  # Abundance based
+        div=(((count/m)**2).sum(axis=0))**(-1)
+    elif MeH==2: # PWS based
         interaction=np.multiply.outer(count/m,count/m).reshape((2**w,2**w))
         Q=sum(sum(D*interaction))
         #print("Q =",Q)
@@ -183,82 +210,84 @@ def MeHperwindow(pat,start,dis,chrom,D,all_pos,w,MeH=2,dist=1):
         else:
             #div=(sum(sum(D*(interaction**2)))/Q)**(-0.5)
             div=(sum(sum(D*(interaction**2)))/(Q**2))**(-0.5)
-    elif MeH==3: 
+    elif MeH==3: #Phylogeny based
+        count=count.reshape(2**w)
+        count=np.concatenate((count[[0]],count))
         if dist==1 and w==4:
             phylotree=np.append(np.append(np.append(np.append([0],np.repeat(0.5,16)),np.repeat(0.25,6)),[0.5]),np.repeat(0.25,6))
             #phylotree=np.repeat(0,1).append(np.repeat(0.5,16)).append(np.repeat(0.25,6)).append(0.5).append(np.repeat(0.25,6))
-            count=np.zeros(30)
+            countn=np.zeros(30)
             #count<-rep(0,29)
-            count[1:17]=prob[1,9,5,3,2,13,11,10,7,6,4,15,14,12,8,16]*2**w
-            count[17]=count[4]+count[7]
-            count[18]=count[9]+count[12]
-            count[19]=count[1]+count[2]
-            count[20]=count[3]+count[6]
-            count[21]=count[17]+count[18]
-            count[22]=count[19]+count[20]
-            count[23]=count[21]+count[22]
-            count[24]=count[5]+count[8]
-            count[25]=count[10]+count[13]
-            count[26]=count[24]+count[25]
-            count[27]=count[23]+count[26]
-            count[28]=count[11]+count[14]
-            count[29]=count[27]+count[28]
+            countn[1:17]=count[[1,9,5,3,2,13,11,10,7,6,4,15,14,12,8,16]]
+            countn[17]=countn[4]+countn[7]
+            countn[18]=countn[9]+countn[12]
+            countn[19]=countn[1]+countn[2]
+            countn[20]=countn[3]+countn[6]
+            countn[21]=countn[17]+countn[18]
+            countn[22]=countn[19]+countn[20]
+            countn[23]=countn[21]+countn[22]
+            countn[24]=countn[5]+countn[8]
+            countn[25]=countn[10]+countn[13]
+            countn[26]=countn[24]+countn[25]
+            countn[27]=countn[23]+countn[26]
+            countn[28]=countn[11]+countn[14]
+            countn[29]=countn[27]+countn[28]
             #Q=sum(sum(phylotree*count))    
         if dist==2 and w==4: 
             phylotree=np.append(np.append(np.append(np.append([0],np.repeat(3,16)),np.repeat(1.5,6)),[3.2,0.8]),np.repeat(2,3),np.repeat(1.5,2))
             #phylotree=c(rep(3,16),rep(1.5,6),3.2,0.8,rep(2,3),1.5,1.5)
-            count=np.zeros(30)
+            countn=np.zeros(30)
             #print(prob)
-            count[1:17]=prob[1,9,5,3,2,13,11,10,7,6,4,15,14,12,8,16]
-            count[17]=count[1]+count[2]
-            count[18]=count[5]+count[8]
-            count[19]=count[3]+count[6]
-            count[20]=count[10]+count[13]
-            count[21]=count[4]+count[7]
-            count[22]=count[11]+count[14]
-            count[23]=count[17]+count[18]
-            count[24]=count[21]+count[22]
-            count[25]=count[19]+count[20]
-            count[26]=count[23]+count[24]
-            count[27]=count[25]+count[26]
-            count[28]=count[9]+count[12]
-            count[29]=count[27]+count[28]
+            countn[1:17]=count[[1,9,5,3,2,13,11,10,7,6,4,15,14,12,8,16]]
+            countn[17]=countn[1]+countn[2]
+            countn[18]=countn[5]+countn[8]
+            countn[19]=countn[3]+countn[6]
+            countn[20]=countn[10]+countn[13]
+            countn[21]=countn[4]+countn[7]
+            countn[22]=countn[11]+countn[14]
+            countn[23]=countn[17]+countn[18]
+            countn[24]=countn[21]+countn[22]
+            countn[25]=countn[19]+countn[20]
+            countn[26]=countn[23]+countn[24]
+            countn[27]=countn[25]+countn[26]
+            countn[28]=countn[9]+countn[12]
+            countn[29]=countn[27]+countn[28]
             #Q=sum(phylotree*count)
         if dist==2 and w==3:
             phylotree=np.append(np.append(np.append([0],np.repeat(1.5,8)),np.repeat(0.75,3)),np.repeat(1.5,0.75))
             #phylotree=np.array(0).append(np.repeat(1.5,8)).append(np.repeat(0.75,3)).append(1.5,0.75)
             #phylotree=c(rep(1.5,8),rep(0.75,3),1.5,0.75)
-            count=np.zeros(14)
-            count[1:9]=prob[1:9]
-            count[9]=count[1]+count[2]
-            count[10]=count[5]+count[6]
-            count[11]=count[3]+count[4]
-            count[12]=count[9]+count[10]
-            count[13]=count[11]+count[12]
+            countn=np.zeros(14)
+            countn[1:9]=count[1:9]
+            countn[9]=countn[1]+countn[2]
+            countn[10]=countn[5]+countn[6]
+            countn[11]=countn[3]+countn[4]
+            countn[12]=countn[9]+countn[10]
+            countn[13]=countn[11]+countn[12]
             #Q=sum(phylotree*count)
         if dist==1 and w==3:
             phylotree=np.append(np.append(np.append([0],np.repeat(0.5,8)),np.repeat(0.25,3)),[0.5,0.25])
             #phylotree=np.array(0).append(np.repeat(0.5,8)).append(np.repeat(0.25,3)).append(0.5,0.25)
-            count=np.zeros(14)
-            count[1:9]=prob[1:9]
-            count[9]=count[1]+count[2]
-            count[10]=count[5]+count[6]
-            count[11]=count[3]+count[4]
-            count[12]=count[9]+count[10]
-            count[13]=count[11]+count[12]
+            countn=np.zeros(14)
+            countn[1:9]=count[1:9]
+            countn[9]=countn[1]+countn[2]
+            countn[10]=countn[5]+countn[6]
+            countn[11]=countn[3]+countn[4]
+            countn[12]=countn[9]+countn[10]
+            countn[13]=countn[11]+countn[12]
             #print("count = ",count)
             #print("phylotree = ",phylotree)
-        Q=sum(phylotree*count)
+        Q=sum(phylotree*countn)
         #div=sum(phylotree*((count/Q)**q))**(1/(1-q))
-        div=sum(phylotree*((count/Q)**q))**(-0.5)
-    elif MeH==4:
+        div=sum(phylotree*((countn/Q)**2))**(-1)
+    elif MeH==4: #Entropy
         div=0
         for i in count:
             if i>0:
-                div-=i*np.log2(i/m)/w
-    elif MeH==5:
+                div-=(i/m)*np.log2(i/m)/w
+    elif MeH==5: #Epipoly
         div=1-((count/m)**2).sum(axis=0)
-    out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':round(div,5),'dis':dis}, index=[0])    
+    out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':round(div,5),'dis':dis,'ML':round(ML,3),'depth':depth}, index=[0])    
     return out
 
 
@@ -295,12 +324,16 @@ def genome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
     fastafile = pysam.FastaFile('MeHdata/%s.fa' % fa)
         
     aggreC = pd.DataFrame(columns=['Qname'])
-    Result1PW = Result1Ent = pd.DataFrame(columns=['chrom','pos','MeH','dis'])
+    ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','ML','depth'])
     never = True
     #chr_lengths = fastafile.get_reference_length(chrom)
     all_pos=np.zeros((2**w,w))
     for i in range(w): 
         all_pos[:,i]=np.linspace(0,2**w-1,2**w)%(2**(i+1))//(2**i)
+    
+    all_pos_key = all_pos.astype(int).tolist()
+    all_pos_key = Counter([str(i[0])+str(i[1])+str(i[2])+str(i[3]) for i in all_pos_key])
+    
     D=PattoDis(pd.DataFrame(all_pos),dist=1) #Hamming distance
     
     start=datetime.datetime.now()
@@ -309,7 +342,7 @@ def genome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
         chrom = pileupcolumn.reference_name
         if not silence:
             if (pileupcolumn.pos % 50000 < 1):
-                print("%s s %s w %s %s pos %s Result %s" % (datetime.datetime.now(),filename,w,chrom,pileupcolumn.pos,Result1PW.shape[0]))
+                print("%s s %s w %s %s pos %s Result %s" % (datetime.datetime.now(),filename,w,chrom,pileupcolumn.pos,ResultPW.shape[0]))
         if (fastafile.fetch(chrom,pileupcolumn.pos,pileupcolumn.pos+2)=='CG'):        
             temp = pd.DataFrame(columns=['Qname',pileupcolumn.pos])
             pileupcolumn.set_min_base_quality(0)
@@ -346,18 +379,21 @@ def genome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
             meth = methtemp.copy()
             # compute coverage and output summary
             for i in range(0,meth.shape[1]-w+1,1):
-                window = meth.iloc[:,range(i,i+w)].values
-                if i<w and enough_reads(window,w,complete=True):
-                    matforMH=getcomplete(window,w)
-                    toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
-                                    dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                    chrom=chrom,D=D,all_pos=all_pos,w=w,dist=dist,MeH=4)
-                    #print(toappend)
-                    Result1Ent=Result1Ent.append(toappend)
-                    toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
-                                    dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                    chrom=chrom,D=D,all_pos=all_pos,w=w,dist=dist,MeH=2)
-                    Result1PW=Result1PW.append(toappend)
+                if i<w:
+                    window = meth.iloc[:,range(i,i+w)].values
+                    if enough_reads(window,w,complete=True):
+                        MC=(window==1).sum(axis=0)[0]
+                        UC=(window==0).sum(axis=0)[0]
+                        depth=MC+UC
+                        ML=float(MC)/float(depth)
+                        matforMH=getcomplete(window,w)
+                        
+                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,all_pos_key=all_pos_key,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                        ResultPW=ResultPW.append(toappend)
+
+                    
             aggreC = aggreC.drop(meth.columns[0:1],axis=1)
             aggreC.dropna(axis = 0, thresh=2, inplace = True)
             #total += w
@@ -386,35 +422,42 @@ def genome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
             meth = methtemp.copy()        
             # compute coverage and output summary
             for i in range(0,meth.shape[1]-w+1,1):
-                window = meth.iloc[:,range(i,i+w)].values
-                if i>w-2 and i<2*w and enough_reads(window,w,complete=True):
-                    matforMH=getcomplete(window,w)
-                    toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
-                                    dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                    chrom=chrom,D=D,all_pos=all_pos,w=w,dist=dist,MeH=4)
-                    #print(toappend)
-                    Result1Ent=Result1Ent.append(toappend)
-                    toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
-                                    dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                    chrom=chrom,D=D,all_pos=all_pos,w=w,dist=dist,MeH=2)
-                    Result1PW=Result1PW.append(toappend)
-                    
-                    if Result1PW.shape[0] % 5000 == 0:   
-                        Result1PW.to_csv(r"MeHdata/PW_%s.csv"%(filename),index = False, header=True)
-                        Result1Ent.to_csv(r"MeHdata/Ent_%s.csv"%(filename),index = False, header=True)
+                if i>w-2 and i<2*w:
+                    window = meth.iloc[:,range(i,i+w)].values
+                    if enough_reads(window,w,complete=True):
+                        MC=(window==1).sum(axis=0)[0]
+                        UC=(window==0).sum(axis=0)[0]
+                        depth=MC+UC
+                        ML=float(MC)/float(depth)
+                        matforMH=getcomplete(window,w)
 
-                        if not silence: 
-                            print("Checkpoint. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,Result1PW.shape[0],pileupcolumn.pos))
+                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,all_pos_key=all_pos_key,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                        ResultPW=ResultPW.append(toappend)
+
+                        if ResultPW.shape[0] % 50000 == 0:   
+                            ResultPW.to_csv(r"MeHdata/PW_%s.csv"%(filename),index = False, header=True)
+                            #ResultEnt.to_csv(r"MeHdata/Ent_%s.csv"%(filename),index = False, header=True)
+                            #ResultEpi.to_csv(r"MeHdata/Epi_%s.csv"%(filename),index = False, header=True)
+                            #ResultPhy.to_csv(r"MeHdata/Phy_%s.csv"%(filename),index = False, header=True)
+                            #ResultAB.to_csv(r"MeHdata/AB_%s.csv"%(filename),index = False, header=True)
+
+                            if not silence: 
+                                print("Checkpoint. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
 
             aggreC = aggreC.drop(meth.columns[0:w],axis=1)
             aggreC.dropna(axis = 0, thresh=2, inplace = True)
             #print(aggreC)
             #total += w
                      
-    if Result1PW.shape[0]>0:   
-        Result1PW.to_csv(r"MeHdata/PW_%s.csv"%(filename),index = False, header=True)
-        Result1Ent.to_csv(r"MeHdata/Ent_%s.csv"%(filename),index = False, header=True)
-        print("Done. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,Result1PW.shape[0],pileupcolumn.pos))
+    if ResultPW.shape[0]>0:   
+        ResultPW.to_csv(r"MeHdata/PW_%s.csv"%(filename),index = False, header=True)
+        #ResultEnt.to_csv(r"MeHdata/Ent_%s.csv"%(filename),index = False, header=True)
+        #ResultEpi.to_csv(r"MeHdata/Epi_%s.csv"%(filename),index = False, header=True)
+        #ResultPhy.to_csv(r"MeHdata/Phy_%s.csv"%(filename),index = False, header=True)
+        #ResultAB.to_csv(r"MeHdata/AB_%s.csv"%(filename),index = False, header=True)
+    print("Done. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
             
     #samfile.close()  
     
@@ -439,8 +482,8 @@ def split_bam(samplenames,Folder):
             outfile.write(reads)
             statinfo_out = os.stat(fileout)
             outfile_Size = statinfo_out.st_size
-            #if(outfile_Size >=1073741824 and sum_Outfile_Size <= infile_Size):
-            if(outfile_Size >=57374182 and sum_Outfile_Size <= bamsize):
+
+            if(outfile_Size >=337374182 and sum_Outfile_Size <= bamsize):
                 sum_Outfile_Size = sum_Outfile_Size + outfile_Size
                 x = x + 1
                 spbam_list.append(fileout_base + "_" + str(x)+ext)
@@ -514,24 +557,6 @@ if __name__ == "__main__":
         print("sample = ",sample)
         if not sample == filename:
             res_dir = Folder + 'PW_' + str(sample) + '.csv'
-            toapp_dir = Folder + 'Ent_' +file + '.csv'
-            if os.path.exists(res_dir):
-                Tomod = pd.read_csv(res_dir) 
-                Toappend = pd.read_csv(toapp_dir)
-                Tomod = Tomod.append(Toappend)
-                Tomod.to_csv(res_dir,index = False,header=True)
-                #os.remove(toapp_dir)
-            else:
-                Toappend = pd.read_csv(toapp_dir)
-                Toappend.to_csv(res_dir,index = False,header=True)
-                #os.remove(toapp_dir)
-                
-    for file in spbam_list:
-        #filename, file_extension = os.path.splitext(file)
-        sample = str.split(file,'_')[0]
-        print("sample = ",sample)
-        if not sample == filename:
-            res_dir = Folder + 'PW_' + str(sample) + '.csv'
             toapp_dir = Folder + 'PW_' +file + '.csv'
             if os.path.exists(res_dir):
                 Tomod = pd.read_csv(res_dir) 
@@ -543,6 +568,7 @@ if __name__ == "__main__":
                 Toappend = pd.read_csv(toapp_dir)
                 Toappend.to_csv(res_dir,index = False,header=True)
                 #os.remove(toapp_dir)
+                
     #os.chdir('../')
     #os.chdir(outputFolder)
     
@@ -568,32 +594,9 @@ if __name__ == "__main__":
 
     Result.to_csv(Folder+'PW_'+'Results.csv' ,index = False,header=True)
 
-    for sample in bam_list: 
-        tomerge_dir = Folder + 'Ent_'+ str(sample) + '.csv' 
-        res_dir = Folder + 'Ent_'+ 'Results.csv'
-        if os.path.exists(res_dir):
-            Result = pd.read_csv(res_dir)
-            Tomerge = pd.read_csv(tomerge_dir)
-            Tomerge = Tomerge.drop(columns='dis')
-            Tomerge = Tomerge.rename(columns={'MeH': sample})
-            Result = Result.merge(Tomerge, on=['chrom','pos'])
-            Result = Result.drop_duplicates() 
-            Result.to_csv(Folder +'Ent_'+'Results.csv',index = False,header=True)
-            os.remove(tomerge_dir)
-        else:
-            Result = pd.read_csv(tomerge_dir)
-            Result = Result.drop(columns='dis')
-            Result = Result.rename(columns={'MeH': sample})
-            Result.to_csv(Folder +'Ent_'+'Results.csv',index = False,header=True)
-            os.remove(tomerge_dir)
-            
-    Result.to_csv(Folder+ 'Ent_'+'Results.csv' ,index = False,header=True)
-    
-    
-    
     for filename in spbam_list:
         file = Folder + filename + '.bam'
         os.remove(Folder + file)
 
 
-    
+# FINAL
