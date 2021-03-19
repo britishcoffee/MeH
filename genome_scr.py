@@ -1,4 +1,4 @@
-
+##
 #---------------------------------------------------------------------
 # SERVER only input all files (.bam and .fa) output MeH matrix in .csv
 # March 10, 2021
@@ -82,6 +82,10 @@ def impute(window,w):
 def getcomplete(window,w):
     temp=np.isnan(window).sum(axis=1)==0
     mat=window[np.where(temp)[0],:]
+    #temp=window.notnull().sum(axis=1)>=w
+    #mat=window.iloc[np.where(temp)[0],:]
+    #else:
+    #    temp=mat.notnull().sum(axis=1)>=w-1
     return mat
 
 def PattoDis(mat,dist=1):
@@ -109,6 +113,24 @@ def WDK_d(pat1,pat2):
             d+=s
     return d
 
+
+def binary(read):
+    w=read.shape[0]
+    if w>1:
+        out=read[0]+2*read[1]
+    if w>2:
+        out+=4*read[2]
+    if w>3:
+        out+=8*read[3]
+    if w>4:
+        out+=16*read[3]
+    if w>5:
+        out+=32*read[3]
+    unique, counts = np.unique(out, return_counts=True)
+    return(counts)
+
+
+
 # input a window of w CGs and output a list of proportions with starting genomic location and genomic distance across
 def window_summ(pat,start,dis,chrom): 
     m=np.shape(pat)[0]
@@ -127,6 +149,7 @@ def window_summ(pat,start,dis,chrom):
                 count+=1
                 #print(count)
         prob[i]=count
+
 
     if d==3:
         out=pd.DataFrame({'chrom':chrom,'pos':start,'p1':prob[0],'p2':prob[1],'p3':prob[2],'p4':prob[3],\
@@ -311,7 +334,7 @@ def genome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
     all_pos_key = all_pos.astype(int).tolist()
     all_pos_key = Counter([str(i[0])+str(i[1])+str(i[2])+str(i[3]) for i in all_pos_key])
     
-    D=PattoDis(pd.DataFrame(all_pos),dist=1) #Hamming distance
+    D=PattoDis(pd.DataFrame(all_pos),dist=dist) #1:Hamming distance
     
     start=datetime.datetime.now()
     
@@ -415,11 +438,6 @@ def genome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
 
                         if ResultPW.shape[0] % 50000 == 0:   
                             ResultPW.to_csv(r"MeHdata/PW_%s.csv"%(filename),index = False, header=True)
-                            #ResultEnt.to_csv(r"MeHdata/Ent_%s.csv"%(filename),index = False, header=True)
-                            #ResultEpi.to_csv(r"MeHdata/Epi_%s.csv"%(filename),index = False, header=True)
-                            #ResultPhy.to_csv(r"MeHdata/Phy_%s.csv"%(filename),index = False, header=True)
-                            #ResultAB.to_csv(r"MeHdata/AB_%s.csv"%(filename),index = False, header=True)
-
                             if not silence: 
                                 print("Checkpoint. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
 
@@ -430,10 +448,7 @@ def genome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
                      
     if ResultPW.shape[0]>0:   
         ResultPW.to_csv(r"MeHdata/PW_%s.csv"%(filename),index = False, header=True)
-        #ResultEnt.to_csv(r"MeHdata/Ent_%s.csv"%(filename),index = False, header=True)
-        #ResultEpi.to_csv(r"MeHdata/Epi_%s.csv"%(filename),index = False, header=True)
-        #ResultPhy.to_csv(r"MeHdata/Phy_%s.csv"%(filename),index = False, header=True)
-        #ResultAB.to_csv(r"MeHdata/AB_%s.csv"%(filename),index = False, header=True)
+    
     print("Done. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
             
     #samfile.close()  
@@ -481,7 +496,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-w", "--windowsize",type=int, default=4 ,help='number of CGs')
 #parser.add_argument("-c", "--chromosome",type=str,help='chromosome')
 parser.add_argument("-c", "--cores",type=int, default=4, help='number of cores')
-#parser.add_argument("-m", "--MeH",type=int, default=2, help='Methylation heterogeneity score 1:Abundance 2:PW 3:Phylogeny')
+parser.add_argument("-m", "--MeH",type=int, default=2, help='Methylation heterogeneity score 1:Abundance 2:PW 3:Phylogeny')
 parser.add_argument("-d", "--dist",type=int, default=1, help='Distance between methylation patterns 1:Hamming 2:WDK')
 
 args = parser.parse_args()
@@ -513,7 +528,7 @@ if __name__ == "__main__":
     #else:
     #    num_cores = 4
         
-    Parallel(n_jobs=args.cores)(delayed(split_bam)(bamfile,Folder=Folder) for bamfile in bam_list)
+    Parallel(n_jobs=args.cores)(delayed(split_bam)(bamfile,Folder=Folder,MeH=args.MeH) for bamfile in bam_list)
     
     spbam_list = []
     tempfiles = os.listdir(Folder)
@@ -521,11 +536,12 @@ if __name__ == "__main__":
         filename, file_extension = os.path.splitext(file)
         if file_extension=='.bam' and filename not in bam_list:
             spbam_list.append(filename)
-    print(spbam_list)
+    #print(spbam_list)
         
     start=t.time()
     Parallel(n_jobs=args.cores)(delayed(genome_scr)(bamfile,w=args.windowsize,fa=fa) for bamfile in spbam_list)
-    print(t.time()-start)
+    print(datetime.datetime.now()," genome screening done. ",len(bam_list)," bam files processed. Time spent ",t.time()-start)
+    #print(t.time()-start)
 
     # merge .csv within sample
     for file in spbam_list:
@@ -556,7 +572,7 @@ if __name__ == "__main__":
         if os.path.exists(res_dir):
             Result = pd.read_csv(res_dir)
             Tomerge = pd.read_csv(tomerge_dir)
-            Tomerge = Tomerge.drop(columns='dis')
+            Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
             Tomerge = Tomerge.rename(columns={'MeH': sample})
             Result = Result.merge(Tomerge, on=['chrom','pos'])
             Result = Result.drop_duplicates() 
@@ -564,7 +580,7 @@ if __name__ == "__main__":
             os.remove(tomerge_dir)
         else:
             Result = pd.read_csv(tomerge_dir)
-            Result = Result.drop(columns='dis')
+            Result = Result.drop(columns=['dis','ML','depth'])
             Result = Result.rename(columns={'MeH': sample})
             Result.to_csv(Folder+'PW_'+'Results.csv',index = False,header=True)
             os.remove(tomerge_dir)
@@ -574,6 +590,7 @@ if __name__ == "__main__":
     for filename in spbam_list:
         file = Folder + filename + '.bam'
         os.remove(Folder + file)
-
+        
+    print("All done. ",len(bam_list)," bam files processed and merged.")
 
 # FINAL
