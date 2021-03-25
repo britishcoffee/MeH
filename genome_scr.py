@@ -152,24 +152,24 @@ def window_summ(pat,start,dis,chrom):
 
 
     if d==3:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p1':prob[0],'p2':prob[1],'p3':prob[2],'p4':prob[3],\
-                    'p5':prob[4],'p6':prob[5],'p7':prob[6],'p8':prob[7],'dis':dis})    
+        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
+                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'dis':dis})    
     if d==4:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p1':prob[0],'p2':prob[1],'p3':prob[2],'p4':prob[3],\
-                    'p5':prob[4],'p6':prob[5],'p7':prob[6],'p8':prob[7],'p9':prob[8],'p10':prob[9],\
+        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
+                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
                     'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
                     'p16':prob[15],'dis':dis})   
     if d==5:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p1':prob[0],'p2':prob[1],'p3':prob[2],'p4':prob[3],\
-                    'p5':prob[4],'p6':prob[5],'p7':prob[6],'p8':prob[7],'p9':prob[8],'p10':prob[9],\
+        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
+                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
                     'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
                     'p16':prob[15],'p17':prob[16],'p18':prob[17],'p19':prob[18],'p20':prob[19],\
                     'p21':prob[20],'p22':prob[21],'p23':prob[22],'p24':prob[23],'p25':prob[24],\
                     'p26':prob[25],'p27':prob[26],'p28':prob[27],'p29':prob[28],'p30':prob[29],\
                     'p31':prob[30],'p32':prob[31],'dis':dis})
     if d==6:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p1':prob[0],'p2':prob[1],'p3':prob[2],'p4':prob[3],\
-                    'p5':prob[4],'p6':prob[5],'p7':prob[6],'p8':prob[7],'p9':prob[8],'p10':prob[9],\
+        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
+                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
                     'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
                     'p16':prob[15],'p17':prob[16],'p18':prob[17],'p19':prob[18],'p20':prob[19],\
                     'p21':prob[20],'p22':prob[21],'p23':prob[22],'p24':prob[23],'p25':prob[24],\
@@ -197,7 +197,8 @@ def MeHperwindow(pat,start,dis,chrom,D,all_pos_key,w,ML,depth,MeH=2,dist=1):
     pat=np.array(pat)
     pat = Counter([str(i[0])+str(i[1])+str(i[2])+str(i[3]) for i in pat.astype(int).tolist()])
     
-    count=np.array([float(pat[i]) for i in all_pos_key])
+    count=np.array([float(pat[i]) for i in ['0000','1000','0100','1100','0010','1010','0110','1110','0001',
+                                '1001','0101','1101','0011','1011','0111','1111']])
     
     if MeH==1:  # Abundance based
         div=(((count/m)**2).sum(axis=0))**(-1)
@@ -331,8 +332,8 @@ def genome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
     for i in range(w): 
         all_pos[:,i]=np.linspace(0,2**w-1,2**w)%(2**(i+1))//(2**i)
     
-    all_pos_key = all_pos.astype(int).tolist()
-    all_pos_key = Counter([str(i[0])+str(i[1])+str(i[2])+str(i[3]) for i in all_pos_key])
+    #all_pos_key = all_pos.astype(int).tolist()
+    #all_pos_key = Counter([str(i[0])+str(i[1])+str(i[2])+str(i[3]) for i in all_pos_key])
     
     D=PattoDis(pd.DataFrame(all_pos),dist=dist) #1:Hamming distance
     
@@ -341,7 +342,7 @@ def genome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
     for pileupcolumn in samfile.pileup():
         chrom = pileupcolumn.reference_name
         if not silence:
-            if (pileupcolumn.pos % 50000 < 1):
+            if (pileupcolumn.pos % 2000000 < 1):
                 print("%s s %s w %s %s pos %s Result %s" % (datetime.datetime.now(),filename,w,chrom,pileupcolumn.pos,ResultPW.shape[0]))
         if (fastafile.fetch(chrom,pileupcolumn.pos,pileupcolumn.pos+2)=='CG'):        
             temp = pd.DataFrame(columns=['Qname',pileupcolumn.pos])
@@ -436,7 +437,7 @@ def genome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
                                         chrom=chrom,D=D,all_pos_key=all_pos_key,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
                         ResultPW=ResultPW.append(toappend)
 
-                        if ResultPW.shape[0] % 50000 == 0:   
+                        if ResultPW.shape[0] % 100000 == 0:   
                             ResultPW.to_csv(r"MeHdata/PW_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
                                 print("Checkpoint. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
@@ -528,7 +529,7 @@ if __name__ == "__main__":
     #else:
     #    num_cores = 4
         
-    Parallel(n_jobs=args.cores)(delayed(split_bam)(bamfile,Folder=Folder,MeH=args.MeH) for bamfile in bam_list)
+    Parallel(n_jobs=args.cores)(delayed(split_bam)(bamfile,Folder=Folder) for bamfile in bam_list)
     
     spbam_list = []
     tempfiles = os.listdir(Folder)
@@ -539,7 +540,7 @@ if __name__ == "__main__":
     #print(spbam_list)
         
     start=t.time()
-    Parallel(n_jobs=args.cores)(delayed(genome_scr)(bamfile,w=args.windowsize,fa=fa) for bamfile in spbam_list)
+    Parallel(n_jobs=args.cores)(delayed(genome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH) for bamfile in spbam_list)
     print(datetime.datetime.now()," genome screening done. ",len(bam_list)," bam files processed. Time spent ",t.time()-start)
     #print(t.time()-start)
 
