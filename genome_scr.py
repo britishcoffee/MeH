@@ -1,8 +1,8 @@
 ##
 #---------------------------------------------------------------------
 # SERVER only input all files (.bam and .fa) output MeH matrix in .csv
-# March 10, 2021
-# FINAL
+# May 17, 2021
+# FINAL github
 #---------------------------------------------------------------------
 
 import random
@@ -51,7 +51,7 @@ def enough_reads(window,w,complete):
         return temp.sum()>=2**(w-2)
     else:  # for imputation
         tempw1=np.isnan(window).sum(axis=1)==1
-        return temp.sum()>=2**(w-1) and tempw1.sum()>0
+        return temp.sum()>=2**(w-2) and tempw1.sum()>0
     
 
 def impute(window,w):
@@ -113,24 +113,6 @@ def WDK_d(pat1,pat2):
             d+=s
     return d
 
-
-def binary(read):
-    w=read.shape[0]
-    if w>1:
-        out=read[0]+2*read[1]
-    if w>2:
-        out+=4*read[2]
-    if w>3:
-        out+=8*read[3]
-    if w>4:
-        out+=16*read[3]
-    if w>5:
-        out+=32*read[3]
-    unique, counts = np.unique(out, return_counts=True)
-    return(counts)
-
-
-
 # input a window of w CGs and output a list of proportions with starting genomic location and genomic distance across
 def window_summ(pat,start,dis,chrom): 
     m=np.shape(pat)[0]
@@ -184,7 +166,7 @@ def window_summ(pat,start,dis,chrom):
     return out
 
 
-def MeHperwindow(pat,start,dis,chrom,D,all_pos_key,w,ML,depth,MeH=2,dist=1): 
+def MeHperwindow(pat,start,dis,chrom,D,w,ML,depth,MeH=2,dist=1,strand='f'): 
     count=np.zeros((2**w,1))
     m=np.shape(pat)[0]
     #print(prob)
@@ -195,10 +177,29 @@ def MeHperwindow(pat,start,dis,chrom,D,all_pos_key,w,ML,depth,MeH=2,dist=1):
     #            c+=1
     #    count[i]=c
     pat=np.array(pat)
-    pat = Counter([str(i[0])+str(i[1])+str(i[2])+str(i[3]) for i in pat.astype(int).tolist()])
-    
-    count=np.array([float(pat[i]) for i in ['0000','1000','0100','1100','0010','1010','0110','1110','0001',
+    if w==2:
+        pat = Counter([str(i[0])+str(i[1]) for i in pat.astype(int).tolist()])
+        count=np.array([float(pat[i]) for i in ['00','10','01','11']])
+    if w==3:
+        pat = Counter([str(i[0])+str(i[1])+str(i[2]) for i in pat.astype(int).tolist()])
+        count=np.array([float(pat[i]) for i in ['000','100','010','110','001','101','011','111']])
+    if w==4:
+        pat = Counter([str(i[0])+str(i[1])+str(i[2])+str(i[3]) for i in pat.astype(int).tolist()])
+        count=np.array([float(pat[i]) for i in ['0000','1000','0100','1100','0010','1010','0110','1110','0001',\
                                 '1001','0101','1101','0011','1011','0111','1111']])
+    if w==5:
+        pat = Counter([str(i[0])+str(i[1])+str(i[2])+str(i[3])+str(i[4]) for i in pat.astype(int).tolist()])
+        count=np.array([float(pat[i]) for i in ['00000','10000','01000','11000','00100','10100','01100','11100','00010',\
+                                '10010','01010','11010','00110','10110','01110','11110','00001','10001','01001','11001','00101',\
+                                '10101','01101','11101','00011','10011','01011','11011','00111','10111','01111','11111']])
+    if w==6:
+        pat = Counter([str(i[0])+str(i[1])+str(i[2])+str(i[3])+str(i[4])+str(i[5]) for i in pat.astype(int).tolist()])
+        count=np.array([float(pat[i]) for i in ['000000','100000','010000','110000','001000','101000','011000','111000','000100',\
+                                '100100','010100','110100','001100','101100','011100','111100','000010','100010','010010','110010','001010',\
+                                '101010','011010','111010','000110', '100110','010110','110110','001110','101110','011110','111110',\
+                                '000001','100001','010001','110001','001001','101001','011001','111001','000101',\
+                                '100101','010101','110101','001101','101101','011101','111101','000011','100011','010011','110011','001011',\
+                                '101011','011011','111011','000111', '100111','010111','110111','001111','101111','011111','111111']])
     
     if MeH==1:  # Abundance based
         div=(((count/m)**2).sum(axis=0))**(-1)
@@ -288,7 +289,7 @@ def MeHperwindow(pat,start,dis,chrom,D,all_pos_key,w,ML,depth,MeH=2,dist=1):
                 div-=(i/m)*np.log2(i/m)/w
     elif MeH==5: #Epipoly
         div=1-((count/m)**2).sum(axis=0)
-    out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':round(div,5),'dis':dis,'ML':round(ML,3),'depth':depth}, index=[0])    
+    out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':round(div,5),'dis':dis,'ML':round(ML,3),'depth':depth, 'strand':strand}, index=[0])    
     return out
 
 
@@ -317,23 +318,20 @@ def impute(window,w):
     return window 
 
 
-def genome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
+def CGgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
     filename, file_extension = os.path.splitext(bamfile)
     sample = str.split(filename,'_')[0]
     #directory = "Outputs/" + str(sample) + '.csv' #original filename of .bams
     samfile = pysam.AlignmentFile("MeHdata/%s.bam" % (filename), "rb")
     fastafile = pysam.FastaFile('MeHdata/%s.fa' % fa)
         
-    aggreC = pd.DataFrame(columns=['Qname'])
-    ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','ML','depth'])
-    never = True
+    aggreR = aggreC = pd.DataFrame(columns=['Qname'])
+    ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','ML','depth','strand'])
+    neverr = never = True
     #chr_lengths = fastafile.get_reference_length(chrom)
     all_pos=np.zeros((2**w,w))
     for i in range(w): 
         all_pos[:,i]=np.linspace(0,2**w-1,2**w)%(2**(i+1))//(2**i)
-    
-    #all_pos_key = all_pos.astype(int).tolist()
-    #all_pos_key = Counter([str(i[0])+str(i[1])+str(i[2])+str(i[3]) for i in all_pos_key])
     
     D=PattoDis(pd.DataFrame(all_pos),dist=dist) #1:Hamming distance
     
@@ -342,8 +340,10 @@ def genome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
     for pileupcolumn in samfile.pileup():
         chrom = pileupcolumn.reference_name
         if not silence:
-            if (pileupcolumn.pos % 2000000 < 1):
-                print("%s s %s w %s %s pos %s Result %s" % (datetime.datetime.now(),filename,w,chrom,pileupcolumn.pos,ResultPW.shape[0]))
+            if (pileupcolumn.pos % 2000000 == 1):
+                print("CG %s s %s w %s %s pos %s Result %s" % (datetime.datetime.now(),filename,w,chrom,pileupcolumn.pos,ResultPW.shape[0]))
+        
+        # Forward
         if (fastafile.fetch(chrom,pileupcolumn.pos,pileupcolumn.pos+2)=='CG'):        
             temp = pd.DataFrame(columns=['Qname',pileupcolumn.pos])
             pileupcolumn.set_min_base_quality(0)
@@ -358,7 +358,25 @@ def genome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
                 #temp.head()
                 aggreC = pd.merge(aggreC,temp,how='outer',on=['Qname'])
                 aggreC = aggreC.drop_duplicates()
-            
+                
+        # Reverse
+        if pileupcolumn.pos>1:
+            if (fastafile.fetch(chrom,pileupcolumn.pos-1,pileupcolumn.pos+1)=='GC'):        
+                tempr = pd.DataFrame(columns=['Qname',pileupcolumn.pos])
+                pileupcolumn.set_min_base_quality(0)
+                for pileupread in pileupcolumn.pileups:
+                    if not pileupread.is_del and not pileupread.is_refskip and pileupread.alignment.is_reverse:  # C
+                        dr = {'Qname': [pileupread.alignment.query_name], pileupcolumn.pos: [pileupread.alignment.query_sequence[pileupread.query_position]]}
+                        dfr2 = pd.DataFrame(data=dr)
+                        #df2.head()
+                        tempr=tempr.append(dfr2, ignore_index=True)
+                #temp.head()
+                if (not tempr.empty):
+                    #temp.head()
+                    aggreR = pd.merge(aggreR,tempr,how='outer',on=['Qname'])
+                    aggreR = aggreR.drop_duplicates()
+
+        # Impute and estimate
         if never and aggreC.shape[1] == (2*w):
             never = False
             aggreC = aggreC.replace(['C','G'],1)
@@ -372,6 +390,9 @@ def genome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
             # impute once if valid
             for i in range(0,meth.shape[1]-w+1,1):
                 window = meth.iloc[:,range(i,i+w)].values
+                MC=(window==1).sum(axis=0)[0]
+                UC=(window==0).sum(axis=0)[0]
+                depth=MC+UC
                 # if eligible for imputation
                 if enough_reads(window,w,complete=False):
                     window=pd.DataFrame(data=impute(window,w))
@@ -383,21 +404,70 @@ def genome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
                 if i<w:
                     window = meth.iloc[:,range(i,i+w)].values
                     if enough_reads(window,w,complete=True):
-                        MC=(window==1).sum(axis=0)[0]
-                        UC=(window==0).sum(axis=0)[0]
-                        depth=MC+UC
                         ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
-                        
                         toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
                                         dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                        chrom=chrom,D=D,all_pos_key=all_pos_key,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='f')
                         ResultPW=ResultPW.append(toappend)
+                    else:
+                        if depth>3:
+                            ML=float(MC)/float(depth)
+                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
+                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                            ResultPW=ResultPW.append(toappend)
 
-                    
             aggreC = aggreC.drop(meth.columns[0:1],axis=1)
             aggreC.dropna(axis = 0, thresh=2, inplace = True)
             #total += w
+            
+        # Reverse
+        if neverr and aggreR.shape[1] == (2*w):
+            neverr = False
+            aggreR = aggreR.replace(['C','G'],1)
+            aggreR = aggreR.replace(['A','T'],0)
+            aggreR = aggreR.replace(['N'],np.nan)
+            methbin = aggreR # backup
+            #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
+            meth = methbin.copy()
+            meth = meth.drop('Qname',axis=1)
+            methtemp = meth.copy()
+            # impute once if valid
+            for i in range(0,meth.shape[1]-w+1,1):
+                window = meth.iloc[:,range(i,i+w)].values
+                MC=(window==1).sum(axis=0)[0]
+                UC=(window==0).sum(axis=0)[0]
+                depth=MC+UC
+                # if eligible for imputation
+                if enough_reads(window,w,complete=False):
+                    window=pd.DataFrame(data=impute(window,w))
+                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+            meth = methtemp.copy()
+            # compute coverage and output summary
+            for i in range(0,meth.shape[1]-w+1,1):
+                if i<w:
+                    window = meth.iloc[:,range(i,i+w)].values
+                    if enough_reads(window,w,complete=True):
+                        ML=float(MC)/float(depth)
+                        matforMH=getcomplete(window,w)
+                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r')
+                        ResultPW=ResultPW.append(toappend)
+                    else:
+                        if depth>3:
+                            ML=float(MC)/float(depth)
+                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
+                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                            ResultPW=ResultPW.append(toappend)
+
+            aggreR = aggreR.drop(meth.columns[0:1],axis=1)
+            aggreR.dropna(axis = 0, thresh=2, inplace = True)
             
         #------------------
         #  SECONDARY CASE
@@ -415,6 +485,9 @@ def genome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
             # impute once if valid
             for i in range(0,meth.shape[1]-w+1,1):
                 window = meth.iloc[:,range(i,i+w)].values
+                MC=(window==1).sum(axis=0)[0]
+                UC=(window==0).sum(axis=0)[0]
+                depth=MC+UC
                 # if eligible for imputation
                 if enough_reads(window,w,complete=False):
                     window=pd.DataFrame(data=impute(window,w))
@@ -426,68 +499,651 @@ def genome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
                 if i>w-2 and i<2*w:
                     window = meth.iloc[:,range(i,i+w)].values
                     if enough_reads(window,w,complete=True):
-                        MC=(window==1).sum(axis=0)[0]
-                        UC=(window==0).sum(axis=0)[0]
-                        depth=MC+UC
                         ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
-
                         toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
                                         dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                        chrom=chrom,D=D,all_pos_key=all_pos_key,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='f')
                         ResultPW=ResultPW.append(toappend)
+                    else:
+                        if depth>3:
+                            ML=float(MC)/float(depth)
+                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
+                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                            ResultPW=ResultPW.append(toappend)
 
-                        if ResultPW.shape[0] % 100000 == 0:   
-                            ResultPW.to_csv(r"MeHdata/PW_%s.csv"%(filename),index = False, header=True)
+                        if ResultPW.shape[0] % 100000 == 1:   
+                            ResultPW.to_csv(r"MeHdata/CG_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
-                                print("Checkpoint. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
+                                print("Checkpoint CG. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
 
             aggreC = aggreC.drop(meth.columns[0:w],axis=1)
             aggreC.dropna(axis = 0, thresh=2, inplace = True)
             #print(aggreC)
             #total += w
-                     
+        
+        # reverse
+        if (aggreR.shape[1] == (3*w-1)):
+            aggreR = aggreR.replace(['C','G'],1)
+            aggreR = aggreR.replace(['A','T'],0)
+            aggreR = aggreR.replace(['N'],np.nan)
+            methbin = aggreR # backup
+            #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
+            meth = methbin.copy()
+            meth = meth.drop('Qname',axis=1)
+            methtemp = meth.copy()
+            # impute once if valid
+            for i in range(0,meth.shape[1]-w+1,1):
+                window = meth.iloc[:,range(i,i+w)].values
+                MC=(window==1).sum(axis=0)[0]
+                UC=(window==0).sum(axis=0)[0]
+                depth=MC+UC
+                # if eligible for imputation
+                if enough_reads(window,w,complete=False):
+                    window=pd.DataFrame(data=impute(window,w))
+                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+            meth = methtemp.copy()        
+            # compute coverage and output summary
+            for i in range(0,meth.shape[1]-w+1,1):
+                if i>w-2 and i<2*w:
+                    window = meth.iloc[:,range(i,i+w)].values
+                    if enough_reads(window,w,complete=True):
+                        ML=float(MC)/float(depth)
+                        matforMH=getcomplete(window,w)
+                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r')
+                        ResultPW=ResultPW.append(toappend)
+                    else:
+                        if depth>3:
+                            ML=float(MC)/float(depth)
+                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
+                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                            ResultPW=ResultPW.append(toappend)
+
+                        if ResultPW.shape[0] % 100000 == 1:   
+                            ResultPW.to_csv(r"MeHdata/CG_%s.csv"%(filename),index = False, header=True)
+                            if not silence: 
+                                print("Checkpoint CG. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
+
+            aggreR = aggreR.drop(meth.columns[0:w],axis=1)
+            aggreR.dropna(axis = 0, thresh=2, inplace = True)
+            
     if ResultPW.shape[0]>0:   
-        ResultPW.to_csv(r"MeHdata/PW_%s.csv"%(filename),index = False, header=True)
+        ResultPW.to_csv(r"MeHdata/CG_%s.csv"%(filename),index = False, header=True)
     
     print("Done. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
             
     #samfile.close()  
     
-def split_bam(samplenames,Folder): 
-        # get bam size
-        spbam_list = []
-        bamfile = samplenames + '.bam'
-        statinfo_out = os.stat(Folder+bamfile)
-        bamsize = statinfo_out.st_size
-        samfile = pysam.Samfile(Folder+bamfile, "rb")
-        fileout_base = os.path.splitext(bamfile)[0] # filename
-        ext = '.bam'
-        x = 0
-        fileout = Folder+fileout_base+"_" + str(x)+ext # filename_x.bam
-        print("fileout ",fileout)
-        header = samfile.header
+def CHHgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
+    filename, file_extension = os.path.splitext(bamfile)
+    sample = str.split(filename,'_')[0]
+    #directory = "Outputs/" + str(sample) + '.csv' #original filename of .bams
+    samfile = pysam.AlignmentFile("MeHdata/%s.bam" % (filename), "rb")
+    fastafile = pysam.FastaFile('MeHdata/%s.fa' % fa)
         
-        outfile = pysam.Samfile(fileout, "wb", header = header)
-        sum_Outfile_Size=0
-        for reads in samfile.fetch():
-            # ordered?
-            outfile.write(reads)
-            statinfo_out = os.stat(fileout)
-            outfile_Size = statinfo_out.st_size
+    aggreR = aggreC = pd.DataFrame(columns=['Qname'])
+    ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','ML','depth','strand'])
+    neverr = never = True
+    #chr_lengths = fastafile.get_reference_length(chrom)
+    all_pos=np.zeros((2**w,w))
+    for i in range(w): 
+        all_pos[:,i]=np.linspace(0,2**w-1,2**w)%(2**(i+1))//(2**i)
+    
+    D=PattoDis(pd.DataFrame(all_pos),dist=dist) #1:Hamming distance
+    
+    start=datetime.datetime.now()
+    
+    for pileupcolumn in samfile.pileup():
+        chrom = pileupcolumn.reference_name
+        if not silence:
+            if (pileupcolumn.pos % 2000000 == 1):
+                print("CHH %s s %s w %s %s pos %s Result %s" % (datetime.datetime.now(),filename,w,chrom,pileupcolumn.pos,ResultPW.shape[0]))
+        
+        # forward
+        if fastafile.fetch(chrom,pileupcolumn.pos,pileupcolumn.pos+1)=='C' and fastafile.fetch(chrom,pileupcolumn.pos+1,pileupcolumn.pos+2)!='G' and fastafile.fetch(chrom,pileupcolumn.pos+2,pileupcolumn.pos+3)!='G':        
+            temp = pd.DataFrame(columns=['Qname',pileupcolumn.pos])
+            pileupcolumn.set_min_base_quality(0)
+            for pileupread in pileupcolumn.pileups:
+                if not pileupread.is_del and not pileupread.is_refskip and not pileupread.alignment.is_reverse:  # C
+                    d = {'Qname': [pileupread.alignment.query_name], pileupcolumn.pos: [pileupread.alignment.query_sequence[pileupread.query_position]]}
+                    df2 = pd.DataFrame(data=d)
+                    #df2.head()
+                    temp=temp.append(df2, ignore_index=True)
+            #temp.head()
+            if (not temp.empty):
+                #temp.head()
+                aggreC = pd.merge(aggreC,temp,how='outer',on=['Qname'])
+                aggreC = aggreC.drop_duplicates()
+                
+        # reverse
+        if pileupcolumn.pos>2:
+            if fastafile.fetch(chrom,pileupcolumn.pos,pileupcolumn.pos+1)=='G' and fastafile.fetch(chrom,pileupcolumn.pos-1,pileupcolumn.pos)!='C' and fastafile.fetch(chrom,pileupcolumn.pos-2,pileupcolumn.pos-1)!='C':        
+                tempr = pd.DataFrame(columns=['Qname',pileupcolumn.pos])
+                pileupcolumn.set_min_base_quality(0)
+                for pileupread in pileupcolumn.pileups:
+                    if not pileupread.is_del and not pileupread.is_refskip and pileupread.alignment.is_reverse:  # C
+                        d = {'Qname': [pileupread.alignment.query_name], pileupcolumn.pos: [pileupread.alignment.query_sequence[pileupread.query_position]]}
+                        df2 = pd.DataFrame(data=d)
+                        #df2.head()
+                        tempr=tempr.append(df2, ignore_index=True)
+                #temp.head()
+                if (not tempr.empty):
+                    #temp.head()
+                    aggreR = pd.merge(aggreR,tempr,how='outer',on=['Qname'])
+                    aggreR = aggreR.drop_duplicates()   
 
-            if(outfile_Size >=337374182 and sum_Outfile_Size <= bamsize):
-                sum_Outfile_Size = sum_Outfile_Size + outfile_Size
-                x = x + 1
-                spbam_list.append(fileout_base + "_" + str(x)+ext)
-                outfile.close()
-                pysam.index(fileout)
-                fileout = Folder+fileout_base + "_" + str(x)+ext
-                print("fileout ",fileout)
-                outfile = pysam.Samfile(fileout, "wb",header = header)
+        if never and aggreC.shape[1] == (2*w):
+            never = False
+            aggreC = aggreC.replace(['C','G'],1)
+            aggreC = aggreC.replace(['A','T'],0)
+            aggreC = aggreC.replace(['N'],np.nan)
+            methbin = aggreC # backup
+            #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
+            meth = methbin.copy()
+            meth = meth.drop('Qname',axis=1)
+            methtemp = meth.copy()
+            # impute once if valid
+            for i in range(0,meth.shape[1]-w+1,1):
+                window = meth.iloc[:,range(i,i+w)].values
+                MC=(window==1).sum(axis=0)[0]
+                UC=(window==0).sum(axis=0)[0]
+                depth=MC+UC
+                # if eligible for imputation
+                if enough_reads(window,w,complete=False):
+                    window=pd.DataFrame(data=impute(window,w))
+                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+            meth = methtemp.copy()
+            # compute coverage and output summary
+            for i in range(0,meth.shape[1]-w+1,1):
+                if i<w:
+                    window = meth.iloc[:,range(i,i+w)].values
+                    # MeH eligibility
+                    if enough_reads(window,w,complete=True):
+                        ML=float(MC)/float(depth)
+                        matforMH=getcomplete(window,w)
+                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='f')
+                        ResultPW=ResultPW.append(toappend)
+                    # else output methylation level
+                    else:
+                        if depth>3:
+                            ML=float(MC)/float(depth)
+                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
+                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                            ResultPW=ResultPW.append(toappend)
+
+            aggreC = aggreC.drop(meth.columns[0:1],axis=1)
+            aggreC.dropna(axis = 0, thresh=2, inplace = True)
+            #total += w
             
-        outfile.close()
-        pysam.index(fileout)
+        # reverse
+        if neverr and aggreR.shape[1] == (2*w):
+            neverr = False
+            aggreR = aggreR.replace(['C','G'],1)
+            aggreR = aggreR.replace(['A','T'],0)
+            aggreR = aggreR.replace(['N'],np.nan)
+            methbin = aggreR # backup
+            #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
+            meth = methbin.copy()
+            meth = meth.drop('Qname',axis=1)
+            methtemp = meth.copy()
+            # impute once if valid
+            for i in range(0,meth.shape[1]-w+1,1):
+                window = meth.iloc[:,range(i,i+w)].values
+                MC=(window==1).sum(axis=0)[0]
+                UC=(window==0).sum(axis=0)[0]
+                depth=MC+UC
+                    
+                # if eligible for imputation
+                if enough_reads(window,w,complete=False):
+                    window=pd.DataFrame(data=impute(window,w))
+                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+            meth = methtemp.copy()
+            # compute coverage and output summary
+            for i in range(0,meth.shape[1]-w+1,1):
+                if i<w:
+                    window = meth.iloc[:,range(i,i+w)].values
+                    #if enough_reads(window,w,complete=True):
+
+                    if enough_reads(window,w,complete=True):
+                        ML=float(MC)/float(depth)
+                        matforMH=getcomplete(window,w)
+                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r')
+                        ResultPW=ResultPW.append(toappend)
+                    else:
+                        if depth>3:
+                            ML=float(MC)/float(depth)
+                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
+                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                            ResultPW=ResultPW.append(toappend)
+                    
+            aggreR = aggreR.drop(meth.columns[0:1],axis=1)
+            aggreR.dropna(axis = 0, thresh=2, inplace = True)
+            
+        #------------------
+        #  SECONDARY CASE
+        #------------------
+
+        if (aggreC.shape[1] == (3*w-1)):
+            aggreC = aggreC.replace(['C','G'],1)
+            aggreC = aggreC.replace(['A','T'],0)
+            aggreC = aggreC.replace(['N'],np.nan)
+            methbin = aggreC # backup
+            #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
+            meth = methbin.copy()
+            meth = meth.drop('Qname',axis=1)
+            methtemp = meth.copy()
+            # impute once if valid
+            for i in range(0,meth.shape[1]-w+1,1):
+                window = meth.iloc[:,range(i,i+w)].values
+                MC=(window==1).sum(axis=0)[0]
+                UC=(window==0).sum(axis=0)[0]
+                depth=MC+UC
+                # if eligible for imputation
+                if enough_reads(window,w,complete=False):
+                    window=pd.DataFrame(data=impute(window,w))
+                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+            meth = methtemp.copy()        
+            # compute coverage and output summary
+            for i in range(0,meth.shape[1]-w+1,1):
+                if i>w-2 and i<2*w:
+                    window = meth.iloc[:,range(i,i+w)].values
+                    # MeH eligibility
+                    if enough_reads(window,w,complete=True):
+                        ML=float(MC)/float(depth)
+                        matforMH=getcomplete(window,w)
+                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='f')
+                        ResultPW=ResultPW.append(toappend)
+                    else:
+                        if depth>3:
+                            ML=float(MC)/float(depth)
+                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
+                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                            ResultPW=ResultPW.append(toappend)
+
+                        if ResultPW.shape[0] % 100000 == 1:   
+                            ResultPW.to_csv(r"MeHdata/CHH_%s.csv"%(filename),index = False, header=True)
+                            if not silence: 
+                                print("Checkpoint CHH. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
+
+            aggreC = aggreC.drop(meth.columns[0:w],axis=1)
+            aggreC.dropna(axis = 0, thresh=2, inplace = True)
+            #print(aggreC)
+            #total += w
+            
+        if (aggreR.shape[1] == (3*w-1)):
+            aggreR = aggreR.replace(['C','G'],1)
+            aggreR = aggreR.replace(['A','T'],0)
+            aggreR = aggreR.replace(['N'],np.nan)
+            methbin = aggreR # backup
+            #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
+            meth = methbin.copy()
+            meth = meth.drop('Qname',axis=1)
+            methtemp = meth.copy()
+            # impute once if valid
+            for i in range(0,meth.shape[1]-w+1,1):
+                window = meth.iloc[:,range(i,i+w)].values
+                MC=(window==1).sum(axis=0)[0]
+                UC=(window==0).sum(axis=0)[0]
+                depth=MC+UC
+                # if eligible for imputation
+                if enough_reads(window,w,complete=False):
+                    window=pd.DataFrame(data=impute(window,w))
+                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+            meth = methtemp.copy()        
+            # compute coverage and output summary
+            for i in range(0,meth.shape[1]-w+1,1):
+                if i>w-2 and i<2*w:
+                    window = meth.iloc[:,range(i,i+w)].values
+                    if enough_reads(window,w,complete=True):
+                        ML=float(MC)/float(depth)
+                        matforMH=getcomplete(window,w)
+                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r')
+                        ResultPW=ResultPW.append(toappend)
+                    else:
+                        if depth>3:
+                            ML=float(MC)/float(depth)
+                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
+                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                            ResultPW=ResultPW.append(toappend)
+
+                        if ResultPW.shape[0] % 100000 == 1:   
+                            ResultPW.to_csv(r"MeHdata/CHH_%s.csv"%(filename),index = False, header=True)
+                            if not silence: 
+                                print("Checkpoint CHH. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
+
+            aggreR = aggreR.drop(meth.columns[0:w],axis=1)
+            aggreR.dropna(axis = 0, thresh=2, inplace = True)
+            #print(aggreC)
+            #total += w 
+            
+    if ResultPW.shape[0]>0:   
+        ResultPW.to_csv(r"MeHdata/CHH_%s.csv"%(filename),index = False, header=True)
+    
+    print("Done CHH. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
+            
+def CHGgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
+    filename, file_extension = os.path.splitext(bamfile)
+    sample = str.split(filename,'_')[0]
+    #directory = "Outputs/" + str(sample) + '.csv' #original filename of .bams
+    samfile = pysam.AlignmentFile("MeHdata/%s.bam" % (filename), "rb")
+    fastafile = pysam.FastaFile('MeHdata/%s.fa' % fa)
+        
+    aggreR = aggreC = pd.DataFrame(columns=['Qname'])
+    ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','ML','depth','strand'])
+    neverr = never = True
+    #chr_lengths = fastafile.get_reference_length(chrom)
+    all_pos=np.zeros((2**w,w))
+    for i in range(w): 
+        all_pos[:,i]=np.linspace(0,2**w-1,2**w)%(2**(i+1))//(2**i)
+    
+    D=PattoDis(pd.DataFrame(all_pos),dist=dist) #1:Hamming distance
+    
+    start=datetime.datetime.now()
+    
+    for pileupcolumn in samfile.pileup():
+        chrom = pileupcolumn.reference_name
+        if not silence:
+            if (pileupcolumn.pos % 2000000 == 1):
+                print("CHG %s s %s w %s %s pos %s Result %s" % (datetime.datetime.now(),filename,w,chrom,pileupcolumn.pos,ResultPW.shape[0]))
+        
+        if fastafile.fetch(chrom,pileupcolumn.pos,pileupcolumn.pos+1)=='C' and fastafile.fetch(chrom,pileupcolumn.pos+1,pileupcolumn.pos+2)!='G' and fastafile.fetch(chrom,pileupcolumn.pos+2,pileupcolumn.pos+3)!='G':        
+            temp = pd.DataFrame(columns=['Qname',pileupcolumn.pos])
+            pileupcolumn.set_min_base_quality(0)
+            for pileupread in pileupcolumn.pileups:
+                if not pileupread.is_del and not pileupread.is_refskip and not pileupread.alignment.is_reverse:  # C
+                    d = {'Qname': [pileupread.alignment.query_name], pileupcolumn.pos: [pileupread.alignment.query_sequence[pileupread.query_position]]}
+                    df2 = pd.DataFrame(data=d)
+                    #df2.head()
+                    temp=temp.append(df2, ignore_index=True)
+            #temp.head()
+            if (not temp.empty):
+                #temp.head()
+                aggreC = pd.merge(aggreC,temp,how='outer',on=['Qname'])
+                aggreC = aggreC.drop_duplicates()
+        
+        # reverse
+        if pileupcolumn.pos>2:
+            if fastafile.fetch(chrom,pileupcolumn.pos,pileupcolumn.pos+1)=='G' and fastafile.fetch(chrom,pileupcolumn.pos-1,pileupcolumn.pos)!='C' and fastafile.fetch(chrom,pileupcolumn.pos-2,pileupcolumn.pos-1)=='C':        
+                tempr = pd.DataFrame(columns=['Qname',pileupcolumn.pos])
+                pileupcolumn.set_min_base_quality(0)
+                for pileupread in pileupcolumn.pileups:
+                    if not pileupread.is_del and not pileupread.is_refskip and pileupread.alignment.is_reverse:  # G
+                        dr = {'Qname': [pileupread.alignment.query_name], pileupcolumn.pos: [pileupread.alignment.query_sequence[pileupread.query_position]]}
+                        df2r = pd.DataFrame(data=dr)
+                        #df2.head()
+                        tempr=tempr.append(df2r, ignore_index=True)
+                #temp.head()
+                if (not tempr.empty):
+                    #temp.head()
+                    aggreR = pd.merge(aggreR,tempr,how='outer',on=['Qname'])
+                    aggreR = aggreR.drop_duplicates()        
+
+        if never and aggreC.shape[1] == (2*w):
+            never = False
+            aggreC = aggreC.replace(['C','G'],1)
+            aggreC = aggreC.replace(['A','T'],0)
+            aggreC = aggreC.replace(['N'],np.nan)
+            methbin = aggreC # backup
+            #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
+            meth = methbin.copy()
+            meth = meth.drop('Qname',axis=1)
+            methtemp = meth.copy()
+            # impute once if valid
+            for i in range(0,meth.shape[1]-w+1,1):
+                window = meth.iloc[:,range(i,i+w)].values
+                MC=(window==1).sum(axis=0)[0]
+                UC=(window==0).sum(axis=0)[0]
+                depth=MC+UC
+                # if eligible for imputation
+                if enough_reads(window,w,complete=False):
+                    window=pd.DataFrame(data=impute(window,w))
+                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+            meth = methtemp.copy()
+            # compute coverage and output summary
+            for i in range(0,meth.shape[1]-w+1,1):
+                if i<w:
+                    window = meth.iloc[:,range(i,i+w)].values
+                    #if enough_reads(window,w,complete=True):                 
+                    if enough_reads(window,w,complete=True):
+                        ML=float(MC)/float(depth)
+                        matforMH=getcomplete(window,w)
+                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                        ResultPW=ResultPW.append(toappend)
+                    else:
+                        if depth>3:
+                            ML=float(MC)/float(depth)
+                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
+                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                            ResultPW=ResultPW.append(toappend)
+
+                    
+            aggreC = aggreC.drop(meth.columns[0:1],axis=1)
+            aggreC.dropna(axis = 0, thresh=2, inplace = True)
+            #total += w
+        
+        # reverse
+        if neverr and aggreR.shape[1] == (2*w):
+            neverr = False
+            aggreR = aggreR.replace(['C','G'],1)
+            aggreR = aggreR.replace(['A','T'],0)
+            aggreR = aggreR.replace(['N'],np.nan)
+            methbin = aggreR # backup
+            #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
+            meth = methbin.copy()
+            meth = meth.drop('Qname',axis=1)
+            methtemp = meth.copy()
+            # impute once if valid
+            for i in range(0,meth.shape[1]-w+1,1):
+                window = meth.iloc[:,range(i,i+w)].values
+                MC=(window==1).sum(axis=0)[0]
+                UC=(window==0).sum(axis=0)[0]
+                depth=MC+UC
+                # if eligible for imputation
+                if enough_reads(window,w,complete=False):
+                    window=pd.DataFrame(data=impute(window,w))
+                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+            meth = methtemp.copy()
+            # compute coverage and output summary
+            for i in range(0,meth.shape[1]-w+1,1):
+                if i<w:
+                    window = meth.iloc[:,range(i,i+w)].values
+                    #if enough_reads(window,w,complete=True):
+                    if enough_reads(window,w,complete=True):
+                        ML=float(MC)/float(depth)
+                        matforMH=getcomplete(window,w)
+                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r')
+                        ResultPW=ResultPW.append(toappend)
+                    else:
+                        if depth>3:
+                            ML=float(MC)/float(depth)
+                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
+                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                            ResultPW=ResultPW.append(toappend)
+
+            aggreR = aggreR.drop(meth.columns[0:1],axis=1)
+            aggreR.dropna(axis = 0, thresh=2, inplace = True)
+            #total += w
+        #------------------
+        #  SECONDARY CASE
+        #------------------
+
+        if (aggreC.shape[1] == (3*w-1)):
+            aggreC = aggreC.replace(['C','G'],1)
+            aggreC = aggreC.replace(['A','T'],0)
+            aggreC = aggreC.replace(['N'],np.nan)
+            methbin = aggreC # backup
+            #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
+            meth = methbin.copy()
+            meth = meth.drop('Qname',axis=1)
+            methtemp = meth.copy()
+            # impute once if valid
+            for i in range(0,meth.shape[1]-w+1,1):
+                window = meth.iloc[:,range(i,i+w)].values
+                MC=(window==1).sum(axis=0)[0]
+                UC=(window==0).sum(axis=0)[0]
+                depth=MC+UC
+                # if eligible for imputation
+                if enough_reads(window,w,complete=False):
+                    window=pd.DataFrame(data=impute(window,w))
+                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+            meth = methtemp.copy()        
+            # compute coverage and output summary
+            for i in range(0,meth.shape[1]-w+1,1):
+                if i>w-2 and i<2*w:
+                    window = meth.iloc[:,range(i,i+w)].values
+                    if enough_reads(window,w,complete=True):
+                        ML=float(MC)/float(depth)
+                        matforMH=getcomplete(window,w)
+                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                        ResultPW=ResultPW.append(toappend)
+                    else:
+                        if depth>3:
+                            ML=float(MC)/float(depth)
+                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth}, index=[0])    
+                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                            ResultPW=ResultPW.append(toappend)
+
+                        if ResultPW.shape[0] % 100000 == 1:   
+                            ResultPW.to_csv(r"MeHdata/CHG_%s.csv"%(filename),index = False, header=True)
+                            if not silence: 
+                                print("Checkpoint CHG. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
+
+            aggreC = aggreC.drop(meth.columns[0:w],axis=1)
+            aggreC.dropna(axis = 0, thresh=2, inplace = True)
+            #print(aggreC)
+            #total += w
+        # reverse
+        if (aggreR.shape[1] == (3*w-1)):
+            aggreR = aggreR.replace(['C','G'],1)
+            aggreR = aggreR.replace(['A','T'],0)
+            aggreR = aggreR.replace(['N'],np.nan)
+            methbin = aggreR # backup
+            #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
+            meth = methbin.copy()
+            meth = meth.drop('Qname',axis=1)
+            methtemp = meth.copy()
+            # impute once if valid
+            for i in range(0,meth.shape[1]-w+1,1):
+                window = meth.iloc[:,range(i,i+w)].values
+                # if eligible for imputation
+                MC=(window==1).sum(axis=0)[0]
+                UC=(window==0).sum(axis=0)[0]
+                depth=MC+UC
+                if enough_reads(window,w,complete=False):
+                    window=pd.DataFrame(data=impute(window,w))
+                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+            meth = methtemp.copy()        
+            # compute coverage and output summary
+            for i in range(0,meth.shape[1]-w+1,1):
+                if i>w-2 and i<2*w:
+                    window = meth.iloc[:,range(i,i+w)].values
+                    #if enough_reads(window,w,complete=True):
+                    if enough_reads(window,w,complete=True):
+                        ML=float(MC)/float(depth)
+                        matforMH=getcomplete(window,w)
+                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r')
+                        ResultPW=ResultPW.append(toappend)
+                    else:
+                        if depth>3:
+                            ML=float(MC)/float(depth)
+                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
+                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                            ResultPW=ResultPW.append(toappend)
+
+                        if ResultPW.shape[0] % 100000 == 1:   
+                            ResultPW.to_csv(r"MeHdata/CHG_%s.csv"%(filename),index = False, header=True)
+                            if not silence: 
+                                print("Checkpoint CHG. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
+
+            aggreR = aggreR.drop(meth.columns[0:w],axis=1)
+            aggreR.dropna(axis = 0, thresh=2, inplace = True) 
+            
+    if ResultPW.shape[0]>0:   
+        ResultPW.to_csv(r"MeHdata/CHG_%s.csv"%(filename),index = False, header=True)
+    
+    print("Done CHG. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
+            
+        
+def split_bam(samplenames,Folder): 
+    # get bam size
+    spbam_list = []
+    bamfile = samplenames + '.bam'
+    statinfo_out = os.stat(Folder+bamfile)
+    bamsize = statinfo_out.st_size
+    samfile = pysam.Samfile(Folder+bamfile, "rb")
+    fileout_base = os.path.splitext(bamfile)[0] # filename
+    ext = '.bam'
+    x = 0
+    fileout = Folder+fileout_base+"_" + str(x)+ext # filename_x.bam
+    print("fileout ",fileout)
+    header = samfile.header
+        
+    outfile = pysam.Samfile(fileout, "wb", header = header)
+    sum_Outfile_Size=0
+    for reads in samfile.fetch():
+        # ordered?
+        outfile.write(reads)
+        statinfo_out = os.stat(fileout)
+        outfile_Size = statinfo_out.st_size
+        if(outfile_Size >=337374182 and sum_Outfile_Size <= bamsize):
+            sum_Outfile_Size = sum_Outfile_Size + outfile_Size
+            x = x + 1
+            spbam_list.append(fileout_base + "_" + str(x)+ext)
+            outfile.close()
+            pysam.index(fileout)
+            fileout = Folder+fileout_base + "_" + str(x)+ext
+            print("fileout ",fileout)
+            outfile = pysam.Samfile(fileout, "wb",header = header)
+            
+    outfile.close()
+    pysam.index(fileout)
         
 import argparse
 parser = argparse.ArgumentParser()
@@ -499,6 +1155,10 @@ parser.add_argument("-w", "--windowsize",type=int, default=4 ,help='number of CG
 parser.add_argument("-c", "--cores",type=int, default=4, help='number of cores')
 parser.add_argument("-m", "--MeH",type=int, default=2, help='Methylation heterogeneity score 1:Abundance 2:PW 3:Phylogeny')
 parser.add_argument("-d", "--dist",type=int, default=1, help='Distance between methylation patterns 1:Hamming 2:WDK')
+#parser.add_argument("-g", "--context",type=int, default=1, help='Cytosine context 1:CG 2:CHG 3:CHH')
+parser.add_argument('--CG', default=False, action='store_true')
+parser.add_argument('--CHG', default=False, action='store_true')
+parser.add_argument('--CHH', default=False, action='store_true')
 
 args = parser.parse_args()
 
@@ -539,59 +1199,157 @@ if __name__ == "__main__":
             spbam_list.append(filename)
     #print(spbam_list)
         
-    start=t.time()
-    Parallel(n_jobs=args.cores)(delayed(genome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH) for bamfile in spbam_list)
-    print(datetime.datetime.now()," genome screening done. ",len(bam_list)," bam files processed. Time spent ",t.time()-start)
-    #print(t.time()-start)
-
-    # merge .csv within sample
-    for file in spbam_list:
-        #filename, file_extension = os.path.splitext(file)
-        sample = str.split(file,'_')[0]
-        print("sample = ",sample)
-        if not sample == filename:
-            res_dir = Folder + 'PW_' + str(sample) + '.csv'
-            toapp_dir = Folder + 'PW_' +file + '.csv'
-            if os.path.exists(res_dir):
-                Tomod = pd.read_csv(res_dir) 
-                Toappend = pd.read_csv(toapp_dir)
-                Tomod = Tomod.append(Toappend)
-                Tomod.to_csv(res_dir,index = False,header=True)
-                #os.remove(toapp_dir)
-            else:
-                Toappend = pd.read_csv(toapp_dir)
-                Toappend.to_csv(res_dir,index = False,header=True)
-                #os.remove(toapp_dir)
-                
-    #os.chdir('../')
-    #os.chdir(outputFolder)
+    #start=t.time()
+    if args.CG:
+        con='CG'
+        Parallel(n_jobs=args.cores)(delayed(CGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH) for bamfile in spbam_list)
     
-    # merge .csv between samples
-    for sample in bam_list: 
-        tomerge_dir = Folder + 'PW_'+ str(sample) + '.csv' 
-        res_dir = Folder + 'PW_'+ 'Results.csv'
-        if os.path.exists(res_dir):
-            Result = pd.read_csv(res_dir)
-            Tomerge = pd.read_csv(tomerge_dir)
-            Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
-            Tomerge = Tomerge.rename(columns={'MeH': sample})
-            Result = Result.merge(Tomerge, on=['chrom','pos'])
-            Result = Result.drop_duplicates() 
-            Result.to_csv(Folder+'PW_'+'Results.csv',index = False,header=True)
-            os.remove(tomerge_dir)
-        else:
-            Result = pd.read_csv(tomerge_dir)
-            Result = Result.drop(columns=['dis','ML','depth'])
-            Result = Result.rename(columns={'MeH': sample})
-            Result.to_csv(Folder+'PW_'+'Results.csv',index = False,header=True)
-            os.remove(tomerge_dir)
+        # merge .csv within sample
+        for file in spbam_list:
+            #filename, file_extension = os.path.splitext(file)
+            sample = str.split(file,'_')[0]
+            print("sample = ",sample)
+            if not sample == filename:
+                res_dir = Folder + con + '_' + str(sample) + '.csv'
+                toapp_dir = Folder + con + '_' +file + '.csv'
+                if os.path.exists(res_dir):
+                    Tomod = pd.read_csv(res_dir) 
+                    Toappend = pd.read_csv(toapp_dir)
+                    Tomod = Tomod.append(Toappend)
+                    Tomod.to_csv(res_dir,index = False,header=True)
+                    #os.remove(toapp_dir)
+                else:
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend.to_csv(res_dir,index = False,header=True)
+                    #os.remove(toapp_dir)
 
-    Result.to_csv(Folder+'PW_'+'Results.csv' ,index = False,header=True)
+        #os.chdir('../')
+        #os.chdir(outputFolder)
+
+        # merge .csv between samples
+        for sample in bam_list: 
+            tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
+            res_dir = Folder +  con + '_' + 'Results.csv'
+            if os.path.exists(res_dir):
+                Result = pd.read_csv(res_dir)
+                Tomerge = pd.read_csv(tomerge_dir)
+                Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
+                Tomerge = Tomerge.rename(columns={'MeH': sample})
+                Result = Result.merge(Tomerge, on=['chrom','pos','strand'])
+                Result = Result.drop_duplicates() 
+                Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
+                os.remove(tomerge_dir)
+            else:
+                Result = pd.read_csv(tomerge_dir)
+                Result = Result.drop(columns=['dis','ML','depth'])
+                Result = Result.rename(columns={'MeH': sample})
+                Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
+                os.remove(tomerge_dir)
+
+        Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
+        print("All done. ",len(bam_list)," bam files processed and merged for CG.")
+    
+    if args.CHG:
+        con='CHG'
+        Parallel(n_jobs=args.cores)(delayed(CHGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH) for bamfile in spbam_list)
+    
+        # merge .csv within sample
+        for file in spbam_list:
+            #filename, file_extension = os.path.splitext(file)
+            sample = str.split(file,'_')[0]
+            print("sample = ",sample)
+            if not sample == filename:
+                res_dir = Folder + con + '_' + str(sample) + '.csv'
+                toapp_dir = Folder + con + '_' +file + '.csv'
+                if os.path.exists(res_dir):
+                    Tomod = pd.read_csv(res_dir) 
+                    Toappend = pd.read_csv(toapp_dir)
+                    Tomod = Tomod.append(Toappend)
+                    Tomod.to_csv(res_dir,index = False,header=True)
+                    #os.remove(toapp_dir)
+                else:
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend.to_csv(res_dir,index = False,header=True)
+                    #os.remove(toapp_dir)
+
+        #os.chdir('../')
+        #os.chdir(outputFolder)
+
+        # merge .csv between samples
+        for sample in bam_list: 
+            tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
+            res_dir = Folder +  con + '_' + 'Results.csv'
+            if os.path.exists(res_dir):
+                Result = pd.read_csv(res_dir)
+                Tomerge = pd.read_csv(tomerge_dir)
+                Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
+                Tomerge = Tomerge.rename(columns={'MeH': sample})
+                Result = Result.merge(Tomerge, on=['chrom','pos','strand'])
+                Result = Result.drop_duplicates() 
+                Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
+                os.remove(tomerge_dir)
+            else:
+                Result = pd.read_csv(tomerge_dir)
+                Result = Result.drop(columns=['dis','ML','depth'])
+                Result = Result.rename(columns={'MeH': sample})
+                Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
+                os.remove(tomerge_dir)
+
+        Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
+        print("All done. ",len(bam_list)," bam files processed and merged for CHG.")
+
+    if args.CHH:
+        con='CHH'
+        Parallel(n_jobs=args.cores)(delayed(CHHgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH) for bamfile in spbam_list)
+    
+        # merge .csv within sample
+        for file in spbam_list:
+            #filename, file_extension = os.path.splitext(file)
+            sample = str.split(file,'_')[0]
+            print("sample = ",sample)
+            if not sample == filename:
+                res_dir = Folder + con + '_' + str(sample) + '.csv'
+                toapp_dir = Folder + con + '_' +file + '.csv'
+                if os.path.exists(res_dir):
+                    Tomod = pd.read_csv(res_dir) 
+                    Toappend = pd.read_csv(toapp_dir)
+                    Tomod = Tomod.append(Toappend)
+                    Tomod.to_csv(res_dir,index = False,header=True)
+                    #os.remove(toapp_dir)
+                else:
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend.to_csv(res_dir,index = False,header=True)
+                    #os.remove(toapp_dir)
+
+        #os.chdir('../')
+        #os.chdir(outputFolder)
+
+        # merge .csv between samples
+        for sample in bam_list: 
+            tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
+            res_dir = Folder +  con + '_' + 'Results.csv'
+            if os.path.exists(res_dir):
+                Result = pd.read_csv(res_dir)
+                Tomerge = pd.read_csv(tomerge_dir)
+                Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
+                Tomerge = Tomerge.rename(columns={'MeH': sample})
+                Result = Result.merge(Tomerge, on=['chrom','pos','strand'])
+                Result = Result.drop_duplicates() 
+                Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
+                os.remove(tomerge_dir)
+            else:
+                Result = pd.read_csv(tomerge_dir)
+                Result = Result.drop(columns=['dis','ML','depth'])
+                Result = Result.rename(columns={'MeH': sample})
+                Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
+                os.remove(tomerge_dir)
+
+        Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
 
     for filename in spbam_list:
         file = Folder + filename + '.bam'
-        os.remove(Folder + file)
+        os.remove(file)
         
-    print("All done. ",len(bam_list)," bam files processed and merged.")
+    print("All done. ",len(bam_list)," bam files processed and merged for CHH.")
 
 # FINAL
