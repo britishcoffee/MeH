@@ -57,20 +57,31 @@ Dest <- read.table('CG_Results.csv',header=TRUE,sep=",")
 Dest <- read.table('CHG_Results.csv',header=TRUE,sep=",")
 Dest <- read.table('CHH_Results.csv',header=TRUE,sep=",")
 ```
+
+![alt text](https://github.com/britishcoffee/Methylationhet/blob/main/image1.png?raw=true)
+
 #### Remove rows with no data
 ```R
 Dest=Dest[which(apply(Dest,1,function(x) sum(is.na(x)))==0),]
 ```
+
+![alt text](https://github.com/britishcoffee/Methylationhet/blob/main/image2.png?raw=true)
 
 #### Construct bins of 400bp (default, can be changed to any even number) and add a column of bin position to data
 ```R
 bin_size=400
 Dest$bin<-((Dest$pos-1) %/% bin_size)*bin_size+(bin_size/2)
 ```
+
+![alt text](https://github.com/britishcoffee/Methylationhet/blob/main/image3.png?raw=true)
+
 #### Obtain names of samples (will be identical to names of the bam files provided if unchanged)
 ```R
 samples=colnames(Dest)[which(!colnames(Dest) %in% c("chrom","pos","strand","bin"))]
 ```
+
+![alt text](https://github.com/britishcoffee/Methylationhet/blob/main/image4.png?raw=true)
+
 
 #### Obtain results (average methylation heterogeneity for the bins) by taking averages of methylation heterogeneity for windows within the same bins
 ```R
@@ -91,6 +102,9 @@ for (s in samples) {
     else new=data
 }
 ```
+
+![alt text](https://github.com/britishcoffee/Methylationhet/blob/main/image5.png?raw=true)
+
 #### Define conditions of all samples; i.e., A and B for 2 conditions, each with two replicates, samples 1 and 2 are replicates of A and samples 3 and 4 are replicates for B. This is for comparisons to be carried out later on
 
 ```R
@@ -108,9 +122,16 @@ Comp1<-data.frame(foreach(i = 1:dim(new)[1],.combine = rbind) %dopar%
 ```R
 Comp1$DHR <- (Comp1$pvalue<0.05)*(abs(Comp1$delta)>1)
 ```
-#### DHG analysis if given bed files as .txt
+
+![alt text](https://github.com/britishcoffee/Methylationhet/blob/main/image6.png?raw=true)
+
+#### DHG analysis if bed file is given as .txt with each row representing a gene and consists of gene name, chromosome number, TSS, TES and strand as 'f' (forward) or 'r' (reverse)
 
 ```R
 geneloc<-read.table('../hg19plusgenes.txt',header=FALSE)
 ```
+![alt text](https://github.com/britishcoffee/Methylationhet/blob/main/image7.png?raw=true)
 ```R
+genelist<-foreach(i = 1:dim(Comp1)[1],.combine = rbind) %dopar% findgene(Comp1[i,c(1,2,3)]) # same for all scores
+```
+
