@@ -3,13 +3,27 @@
 ## Methylation heterogeneity profiling
 
 ### 1. Download genome_scr.py
-
+```js
+wget --no-check-certificate --content-disposition https://raw.githubusercontent.com/britishcoffee/Methylationhet/main/genome_scr.py?token=AHGRPBQHJLPQXPOTCTEEZ4LAU5SLK
+curl -LJO https://raw.githubusercontent.com/britishcoffee/Methylationhet/main/genome_scr.py?token=AHGRPBQHJLPQXPOTCTEEZ4LAU5SLK
+mv genome_scr.py?token=AHGRPBQHJLPQXPOTCTEEZ4LAU5SLK genome_scr.py
+```
 ### 2. Open a folder named "MeHdata" under the same directory
-
+```js
+mkdir MeHdata
+```
 ### 3. Place .bam and .bam.bai files of all samples you wish to obtain methylation heterogeneity profiles into folder MeHdata/
-
+```js
+scp [directory_to_bamfiles_of_all_samples].bam* ./MeHdata
+# or within MeHdata/
+ln -s [directory_to_bamfiles_of_all_samples].bam*
+```
 ### 4. Also place .fa and .fa.fai of the reference genome into the folder
-
+```js
+scp [directory_to_reference_genome].fa* ./MeHdata
+# or within MeHdata/
+ln -s [directory_to_reference_genome].fa*
+```
 ### 5. Run the program genome_scr.py by using one of the following commands
 
 #### 'CG' only with window size of 4 cytosines and 4 cores parallel processing
