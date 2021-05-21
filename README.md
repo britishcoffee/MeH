@@ -24,14 +24,14 @@ scp [directory_to_reference_genome].fa* ./MeHdata
 # or within MeHdata/
 ln -s [directory_to_reference_genome].fa*
 ```
-### 5. Run the program genome_scr.py by using one of the following commands
+### 5. Run the program genome_scr.py (see examples below)
 
-#### 'CG' only with window size of 4 cytosines and 4 cores parallel processing
+#### 'CG' only with window size of 4 cytosines and 4 cores parallel processing (default score is pairwise-similarity-based method, default distance between methylation patterns is Hamming distance)
 
 ```js
     python genome_scr.py -w 4 -c 4 --CG
 ```
-#### 'CG', 'CHG' and 'CHH' with window size of 4 cytosines, weighted degree kernel for pairwise distances between methylation patterns (default is Hamming distance if unspecified) and 8 cores parallel processing
+#### 'CG', 'CHG' and 'CHH' with window size of 4 cytosines, weighted degree kernel for pairwise distances between methylation patterns and 8 cores parallel processing
 
 ```js
     python genome_scr.py -w 4 -c 8 --CG --CHG --CHH -d 2
