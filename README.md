@@ -63,6 +63,25 @@ MeH.t=function(vector,conditions,compare) {
     return(data.frame(chrom=vector[1],pos=vector[2],delta=out$est[2]-out$est[1],pvalue=as.numeric(out$p.value),mean2=out$est[2],mean1=out$est[1]))
   }
 }
+
+
+findgene = function(position) {
+  chr=unlist(position[1])
+  #message(chr)
+  BP=as.numeric(position[2])
+  #message(BP)
+  St=unlist(position[3])
+  if (St=='f') {
+    Gene=geneloc$gene[which((geneloc$TSS<=BP)*(geneloc$TES>=BP)*(geneloc$chrom==chr)==1)][1]
+    promoter=geneloc$gene[which((geneloc$TSS-1000<=BP)*(geneloc$TSS+1000>=BP)*(geneloc$chrom==chr)==1)][1]
+  }
+  if (St=='r') {
+    Gene=geneloc$gene[which((geneloc$TSS<=BP)*(geneloc$TES>=BP)*(geneloc$chrom==chr)==1)][1]
+    promoter=geneloc$gene[which((geneloc$TES-1000<=BP)*(geneloc$TES+1000>=BP)*(geneloc$chrom==chr)==1)][1]
+  }
+  return(list(chrom=chr,bin=BP,Gene=Gene,Promoter=promoter,strand=St))
+}
+
 ```
 #### Load files for analysis by first setting the work directory to where your files are located
 ```R
@@ -142,7 +161,7 @@ Comp1$DHR <- (Comp1$pvalue<0.05)*(abs(Comp1$delta)>1)
 #### DHG analysis if bed file is given as .txt with each row representing a gene and consists of gene name, chromosome number, TSS, TES and strand as 'f' (forward) or 'r' (reverse)
 
 ```R
-geneloc<-read.table('../hg19plusgenes.txt',header=FALSE)
+geneloc<-read.table('../hg19plusgenes.txt',header=TRUE)
 ```
 ![alt text](https://github.com/britishcoffee/Methylationhet/blob/main/image7.png?raw=true)
 ```R
