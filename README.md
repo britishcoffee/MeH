@@ -146,6 +146,6 @@ geneloc<-read.table('../hg19plusgenes.txt',header=FALSE)
 ```
 ![alt text](https://github.com/britishcoffee/Methylationhet/blob/main/image7.png?raw=true)
 ```R
-genelist<-foreach(i = 1:dim(Comp1)[1],.combine = rbind) %dopar% findgene(Comp1[i,c(1,2,3)]) # same for all scores
+genelist<-foreach(i = 1:dim(Comp1)[1],.combine = rbind) %dopar% findgene(Comp1[i,c("chrom","bin","strand")]) 
 ```
 
