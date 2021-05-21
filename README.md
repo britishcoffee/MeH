@@ -35,7 +35,7 @@ install.packages("foreach")
 library(foreach)
 
 MeH.t=function(vector,conditions,compare) {
-  ind1<-which(conditions == compare[1])+3 # +2 for CHR and POS columns
+  ind1<-which(conditions == compare[1])+3 # +2 for chrom,bin and strand columns
   ind2<-which(conditions == compare[2])+3
   #l=length(vector)
   vector=as.data.frame(vector)
@@ -47,7 +47,6 @@ MeH.t=function(vector,conditions,compare) {
   else {
     out=t.test(vector[ind1],vector[ind2])
     return(data.frame(chrom=vector[1],pos=vector[2],delta=out$est[2]-out$est[1],pvalue=as.numeric(out$p.value),mean2=out$est[2],mean1=out$est[1]))
-    #(out$est[1]>0)*(out$est[2]-out$est[1])*2/abs(out$est[1]+out$est[2])
   }
 }
 ```
@@ -58,7 +57,7 @@ Dest <- read.table('CG_Results.csv',header=TRUE,sep=",")
 Dest <- read.table('CHG_Results.csv',header=TRUE,sep=",")
 Dest <- read.table('CHH_Results.csv',header=TRUE,sep=",")
 ```
-#### remove rows with no data
+#### Remove rows with no data
 ```R
 Dest=Dest[which(apply(Dest,1,function(x) sum(is.na(x)))==0),]
 ```
