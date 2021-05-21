@@ -161,7 +161,7 @@ Comp1$DHR <- (Comp1$pvalue<0.05)*(abs(Comp1$delta)>1)
 #### DHG analysis if bed file is given as .txt with each row representing a gene and consists of gene name, chromosome number, TSS, TES and strand as 'f' (forward) or 'r' (reverse)
 
 ```R
-geneloc<-read.table('../hg19plusgenes.txt',header=TRUE)
+geneloc<-read.table('../genelist.txt',header=TRUE)
 ```
 ![alt text](https://github.com/britishcoffee/Methylationhet/blob/main/image7.png?raw=true)
 ```R
