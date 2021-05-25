@@ -166,10 +166,10 @@ def window_summ(pat,start,dis,chrom):
     return out
 
 
-def MeHperwindow(pat,start,dis,chrom,D,w,ML,depth,MeH=2,dist=1,strand='f'): 
+def MeHperwindow(pat,start,dis,chrom,D,w,ML,depth,optional,MeH=2,dist=1,strand='f'): 
     count=np.zeros((2**w,1))
     m=np.shape(pat)[0]
-    #print(prob)
+    #print(count)
     #for i in range(2**w): 
     #    c = 0
     #    for j in range(m):
@@ -202,16 +202,15 @@ def MeHperwindow(pat,start,dis,chrom,D,w,ML,depth,MeH=2,dist=1,strand='f'):
                                 '101011','011011','111011','000111', '100111','010111','110111','001111','101111','011111','111111']])
     
     if MeH==1:  # Abundance based
-        div=(((count/m)**2).sum(axis=0))**(-1)
+        score=(((count/m)**2).sum(axis=0))**(-1)
     elif MeH==2: # PWS based
         interaction=np.multiply.outer(count/m,count/m).reshape((2**w,2**w))
         Q=sum(sum(D*interaction))
         #print("Q =",Q)
         if Q==0:
-            div=0
+            score=0
         else:
-            #div=(sum(sum(D*(interaction**2)))/Q)**(-0.5)
-            div=(sum(sum(D*(interaction**2)))/(Q**2))**(-0.5)
+            score=(sum(sum(D*(interaction**2)))/(Q**2))**(-0.5)
     elif MeH==3: #Phylogeny based
         count=count.reshape(2**w)
         count=np.concatenate((count[[0]],count))
@@ -239,7 +238,7 @@ def MeHperwindow(pat,start,dis,chrom,D,w,ML,depth,MeH=2,dist=1,strand='f'):
             phylotree=np.append(np.append(np.append(np.append([0],np.repeat(3,16)),np.repeat(1.5,6)),[3.2,0.8]),np.repeat(2,3),np.repeat(1.5,2))
             #phylotree=c(rep(3,16),rep(1.5,6),3.2,0.8,rep(2,3),1.5,1.5)
             countn=np.zeros(30)
-            #print(prob)
+            #print(count)
             countn[1:17]=count[[1,9,5,3,2,13,11,10,7,6,4,15,14,12,8,16]]
             countn[17]=countn[1]+countn[2]
             countn[18]=countn[5]+countn[8]
@@ -281,16 +280,50 @@ def MeHperwindow(pat,start,dis,chrom,D,w,ML,depth,MeH=2,dist=1,strand='f'):
             #print("phylotree = ",phylotree)
         Q=sum(phylotree*countn)
         #div=sum(phylotree*((count/Q)**q))**(1/(1-q))
-        div=sum(phylotree*((countn/Q)**2))**(-1)
+        score=sum(phylotree*((countn/Q)**2))**(-1)
     elif MeH==4: #Entropy
-        div=0
+        score=0
         for i in count:
             if i>0:
-                div-=(i/m)*np.log2(i/m)/w
+                score-=(i/m)*np.log2(i/m)/w
     elif MeH==5: #Epipoly
-        div=1-((count/m)**2).sum(axis=0)
-    out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':round(div,5),'dis':dis,'ML':round(ML,3),'depth':depth, 'strand':strand}, index=[0])    
-    return out
+        score=1-((count/m)**2).sum(axis=0)
+    out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':round(div,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])    
+    
+    if optional:
+        if d==3:
+            opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[0],'p02':count[1],'p03':count[2],'p04':count[3],\
+                        'p05':count[4],'p06':count[5],'p07':count[6],'p08':count[7],'MeH':round(div,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])     
+        if d==4:
+            opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[0],'p02':count[1],'p03':count[2],'p04':count[3],\
+                        'p05':count[4],'p06':count[5],'p07':count[6],'p08':count[7],'p09':count[8],'p10':count[9],\
+                        'p11':count[10],'p12':count[11],'p13':count[12],'p14':count[13],'p15':count[14],\
+                        'p16':count[15],'MeH':round(div,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])   
+        if d==5:
+            opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[0],'p02':count[1],'p03':count[2],'p04':count[3],\
+                        'p05':count[4],'p06':count[5],'p07':count[6],'p08':count[7],'p09':count[8],'p10':count[9],\
+                        'p11':count[10],'p12':count[11],'p13':count[12],'p14':count[13],'p15':count[14],\
+                        'p16':count[15],'p17':count[16],'p18':count[17],'p19':count[18],'p20':count[19],\
+                        'p21':count[20],'p22':count[21],'p23':count[22],'p24':count[23],'p25':count[24],\
+                        'p26':count[25],'p27':count[26],'p28':count[27],'p29':count[28],'p30':count[29],\
+                        'p31':count[30],'p32':count[31],'MeH':round(div,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])    
+        if d==6:
+            opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[0],'p02':count[1],'p03':count[2],'p04':count[3],\
+                        'p05':count[4],'p06':count[5],'p07':count[6],'p08':count[7],'p09':count[8],'p10':count[9],\
+                        'p11':count[10],'p12':count[11],'p13':count[12],'p14':count[13],'p15':count[14],\
+                        'p16':count[15],'p17':count[16],'p18':count[17],'p19':count[18],'p20':count[19],\
+                        'p21':count[20],'p22':count[21],'p23':count[22],'p24':count[23],'p25':count[24],\
+                        'p26':count[25],'p27':count[26],'p28':count[27],'p29':count[28],'p30':count[29],\
+                        'p31':count[30],'p32':count[31],'p33':count[32],'p34':count[33],'p35':count[34],\
+                        'p36':count[35],'p37':count[36],'p38':count[37],'p39':count[38],'p40':count[39],\
+                        'p41':count[40],'p42':count[41],'p43':count[42],'p44':count[43],'p45':count[44],\
+                        'p46':count[45],'p47':count[46],'p48':count[47],'p49':count[48],'p50':count[49],\
+                        'p51':count[50],'p52':count[51],'p53':count[52],'p54':count[53],'p55':count[54],\
+                        'p56':count[55],'p57':count[56],'p58':count[57],'p59':count[58],'p60':count[59],\
+                        'p61':count[60],'p62':count[61],'p63':count[62],'p64':count[63],'MeH':round(div,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])    
+        return out, opt
+    else:
+        return out
 
 
 def impute(window,w):
@@ -318,7 +351,7 @@ def impute(window,w):
     return window 
 
 
-def CGgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
+def CGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
     filename, file_extension = os.path.splitext(bamfile)
     sample = str.split(filename,'_')[0]
     #directory = "Outputs/" + str(sample) + '.csv' #original filename of .bams
@@ -327,6 +360,30 @@ def CGgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
         
     aggreR = aggreC = pd.DataFrame(columns=['Qname'])
     ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','ML','depth','strand'])
+    
+    if optional:
+        if w==3:
+            Resultopt = pd.DataFrame(columns=\
+                        ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08',\
+                         'MeH','dis','ML','depth','strand'])
+        if w==4:
+            Resultopt = pd.DataFrame(columns=\
+                        ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11',\
+                         'p12','p13','p14','p15','p16','MeH','dis','ML','depth','strand'])
+        if w==5:
+            Resultopt = pd.DataFrame(columns=\
+                        ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11','p12','p13','p14','p15','p16'\
+                        ,'p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28',\
+                        'p29','p30','p31','p32','MeH','dis','ML','depth','strand'])
+        if w==5:
+            Resultopt = pd.DataFrame(columns=\
+                        ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11','p12','p13','p14','p15','p16'\
+                        ,'p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28',\
+                        'p29','p30','p31','p32','p33','p34','p35','p36','p37','p38','p39','p40','p41','p42','p43','p44','p45','p46'\
+                         ,'p47','p48','p49','p50','p51','p52','p53','p54','p55','p56','p57','p58','p59','p60','p61','p62','p63','p64'\
+                         ,'MeH','dis','ML','depth','strand'])    
+
+    
     neverr = never = True
     #chr_lengths = fastafile.get_reference_length(chrom)
     all_pos=np.zeros((2**w,w))
@@ -568,6 +625,8 @@ def CGgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
 
                         if ResultPW.shape[0] % 100000 == 1:   
                             ResultPW.to_csv(r"MeHdata/CG_%s.csv"%(filename),index = False, header=True)
+                            if optional:
+                                Resultopt.to_csv(r"MeHdata/CG_opt_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
                                 print("Checkpoint CG. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
 
@@ -576,12 +635,14 @@ def CGgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
             
     if ResultPW.shape[0]>0:   
         ResultPW.to_csv(r"MeHdata/CG_%s.csv"%(filename),index = False, header=True)
-    
+        if optional:
+            Resultopt.to_csv(r"MeHdata/CG_opt_%s.csv"%(filename),index = False, header=True)
+                            
     print("Done. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
             
     #samfile.close()  
     
-def CHHgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
+def CHHgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
     filename, file_extension = os.path.splitext(bamfile)
     sample = str.split(filename,'_')[0]
     #directory = "Outputs/" + str(sample) + '.csv' #original filename of .bams
@@ -590,6 +651,27 @@ def CHHgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
         
     aggreR = aggreC = pd.DataFrame(columns=['Qname'])
     ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','ML','depth','strand'])
+    if optional:
+        if w==3:
+            Resultopt = pd.DataFrame(columns=\
+                        ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08',\
+                         'MeH','dis','ML','depth','strand'])
+        if w==4:
+            Resultopt = pd.DataFrame(columns=\
+                        ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11',\
+                         'p12','p13','p14','p15','p16','MeH','dis','ML','depth','strand'])
+        if w==5:
+            Resultopt = pd.DataFrame(columns=\
+                        ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11','p12','p13','p14','p15','p16'\
+                        ,'p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28',\
+                        'p29','p30','p31','p32','MeH','dis','ML','depth','strand'])
+        if w==5:
+            Resultopt = pd.DataFrame(columns=\
+                        ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11','p12','p13','p14','p15','p16'\
+                        ,'p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28',\
+                        'p29','p30','p31','p32','p33','p34','p35','p36','p37','p38','p39','p40','p41','p42','p43','p44','p45','p46'\
+                         ,'p47','p48','p49','p50','p51','p52','p53','p54','p55','p56','p57','p58','p59','p60','p61','p62','p63','p64'\
+                         ,'MeH','dis','ML','depth','strand'])  
     neverr = never = True
     #chr_lengths = fastafile.get_reference_length(chrom)
     all_pos=np.zeros((2**w,w))
@@ -769,10 +851,18 @@ def CHHgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
                     if enough_reads(window,w,complete=True):
                         ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
-                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                        if optional:
+                            toappend,opt=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
                                         dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='f')
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='f',optional=optional)
+                            Resultopt=Resultopt.append(opt)
+                        else:
+                            toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='f',optional=optional)
                         ResultPW=ResultPW.append(toappend)
+                        
+    
                     else:
                         if depth>3:
                             ML=float(MC)/float(depth)
@@ -784,6 +874,9 @@ def CHHgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
 
                         if ResultPW.shape[0] % 100000 == 1:   
                             ResultPW.to_csv(r"MeHdata/CHH_%s.csv"%(filename),index = False, header=True)
+                            if optional:
+                                Resultopt.to_csv(r"MeHdata/CHH_opt_%s.csv"%(filename),index = False, header=True)
+                            
                             if not silence: 
                                 print("Checkpoint CHH. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
 
@@ -820,9 +913,15 @@ def CHHgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
                     if enough_reads(window,w,complete=True):
                         ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
-                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                        if optional:
+                            toappend,opt=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
                                         dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r')
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r',optional=optional)
+                            Resultopt=Resultopt.append(opt)
+                        else:
+                            toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r',optional=optional)
                         ResultPW=ResultPW.append(toappend)
                     else:
                         if depth>3:
@@ -835,6 +934,8 @@ def CHHgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
 
                         if ResultPW.shape[0] % 100000 == 1:   
                             ResultPW.to_csv(r"MeHdata/CHH_%s.csv"%(filename),index = False, header=True)
+                            if optional:
+                                Resultopt.to_csv(r"MeHdata/CHH_opt_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
                                 print("Checkpoint CHH. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
 
@@ -845,10 +946,12 @@ def CHHgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
             
     if ResultPW.shape[0]>0:   
         ResultPW.to_csv(r"MeHdata/CHH_%s.csv"%(filename),index = False, header=True)
-    
+        if optional:
+            Resultopt.to_csv(r"MeHdata/CHH_opt_%s.csv"%(filename),index = False, header=True)
+                            
     print("Done CHH. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
             
-def CHGgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
+def CHGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
     filename, file_extension = os.path.splitext(bamfile)
     sample = str.split(filename,'_')[0]
     #directory = "Outputs/" + str(sample) + '.csv' #original filename of .bams
@@ -857,6 +960,29 @@ def CHGgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
         
     aggreR = aggreC = pd.DataFrame(columns=['Qname'])
     ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','ML','depth','strand'])
+    
+    if optional:
+        if w==3:
+            Resultopt = pd.DataFrame(columns=\
+                        ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08',\
+                         'MeH','dis','ML','depth','strand'])
+        if w==4:
+            Resultopt = pd.DataFrame(columns=\
+                        ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11',\
+                         'p12','p13','p14','p15','p16','MeH','dis','ML','depth','strand'])
+        if w==5:
+            Resultopt = pd.DataFrame(columns=\
+                        ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11','p12','p13','p14','p15','p16'\
+                        ,'p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28',\
+                        'p29','p30','p31','p32','MeH','dis','ML','depth','strand'])
+        if w==5:
+            Resultopt = pd.DataFrame(columns=\
+                        ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11','p12','p13','p14','p15','p16'\
+                        ,'p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28',\
+                        'p29','p30','p31','p32','p33','p34','p35','p36','p37','p38','p39','p40','p41','p42','p43','p44','p45','p46'\
+                         ,'p47','p48','p49','p50','p51','p52','p53','p54','p55','p56','p57','p58','p59','p60','p61','p62','p63','p64'\
+                         ,'MeH','dis','ML','depth','strand'])    
+
     neverr = never = True
     #chr_lengths = fastafile.get_reference_length(chrom)
     all_pos=np.zeros((2**w,w))
@@ -935,10 +1061,17 @@ def CHGgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
                     if enough_reads(window,w,complete=True):
                         ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
-                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                        if optional:
+                            toappend,opt=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
                                         dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,optional=optional,strand='f')
+                            Resultopt=Resultopt.append(opt)
+                        else:
+                            toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,optional=optional,strand='f')
                         ResultPW=ResultPW.append(toappend)
+                        
                     else:
                         if depth>3:
                             ML=float(MC)/float(depth)
@@ -984,10 +1117,17 @@ def CHGgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
                     if enough_reads(window,w,complete=True):
                         ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
-                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                        if optional:
+                            toappend,opt=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
                                         dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r')
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,optional=optional,strand='r')
+                            Resultopt=Resultopt.append(opt)
+                        else:
+                            toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,optional=optional,strand='r')
                         ResultPW=ResultPW.append(toappend)
+                        
                     else:
                         if depth>3:
                             ML=float(MC)/float(depth)
@@ -1032,21 +1172,27 @@ def CHGgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
                     if enough_reads(window,w,complete=True):
                         ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
-                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                        if optional:
+                            toappend,opt=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
                                         dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,optional=optional,strand='f')
+                            Resultopt=Resultopt.append(opt)
+                        else:
+                            toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,optional=optional,strand='f')
                         ResultPW=ResultPW.append(toappend)
+                        
                     else:
                         if depth>3:
                             ML=float(MC)/float(depth)
                             toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth}, index=[0])    
-                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
                             ResultPW=ResultPW.append(toappend)
 
                         if ResultPW.shape[0] % 100000 == 1:   
                             ResultPW.to_csv(r"MeHdata/CHG_%s.csv"%(filename),index = False, header=True)
+                            if optional:
+                                Resultopt.to_csv(r"MeHdata/CHG_opt_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
                                 print("Checkpoint CHG. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
 
@@ -1084,21 +1230,26 @@ def CHGgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
                     if enough_reads(window,w,complete=True):
                         ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
-                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                        if optional:
+                            toappend,opt=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
                                         dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r')
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,optional=optional,strand='r')
+                            Resultopt=Resultopt.append(opt)
+                        else:
+                            toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,optional=optional,strand='r')
                         ResultPW=ResultPW.append(toappend)
                     else:
                         if depth>3:
                             ML=float(MC)/float(depth)
                             toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
-                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
                             ResultPW=ResultPW.append(toappend)
 
                         if ResultPW.shape[0] % 100000 == 1:   
                             ResultPW.to_csv(r"MeHdata/CHG_%s.csv"%(filename),index = False, header=True)
+                            if optional:
+                                Resultopt.to_csv(r"MeHdata/CHG_opt_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
                                 print("Checkpoint CHG. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
 
@@ -1107,6 +1258,9 @@ def CHGgenome_scr(bamfile,w,fa,silence=False,dist=1,MeH=2):
             
     if ResultPW.shape[0]>0:   
         ResultPW.to_csv(r"MeHdata/CHG_%s.csv"%(filename),index = False, header=True)
+        if optional:
+            Resultopt.to_csv(r"MeHdata/CHG_opt_%s.csv"%(filename),index = False, header=True)
+                            
     
     print("Done CHG. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
             
@@ -1159,6 +1313,9 @@ parser.add_argument("-d", "--dist",type=int, default=1, help='Distance between m
 parser.add_argument('--CG', default=False, action='store_true')
 parser.add_argument('--CHG', default=False, action='store_true')
 parser.add_argument('--CHH', default=False, action='store_true')
+parser.add_argument('--opt', default=False, action='store_true')
+
+
 
 args = parser.parse_args()
 
@@ -1202,7 +1359,7 @@ if __name__ == "__main__":
     #start=t.time()
     if args.CG:
         con='CG'
-        Parallel(n_jobs=args.cores)(delayed(CGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH) for bamfile in spbam_list)
+        Parallel(n_jobs=args.cores)(delayed(CGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt) for bamfile in spbam_list)
     
         # merge .csv within sample
         for file in spbam_list:
@@ -1222,7 +1379,24 @@ if __name__ == "__main__":
                     Toappend = pd.read_csv(toapp_dir)
                     Toappend.to_csv(res_dir,index = False,header=True)
                     #os.remove(toapp_dir)
-
+        if args.opt:
+            for file in spbam_list:
+            filename, file_extension = os.path.splitext(file)
+            sample = str.split(file,'_')[0]
+            print("sample = ",sample)
+            if not sample == filename:
+                res_dir = Folder + con + '_opt_' + str(sample) + '.csv'
+                toapp_dir = Folder + con + '_opt_' +file + '.csv'
+                if os.path.exists(res_dir):
+                    Tomod = pd.read_csv(res_dir) 
+                    Toappend = pd.read_csv(toapp_dir)
+                    Tomod = Tomod.append(Toappend)
+                    Tomod.to_csv(res_dir,index = False,header=True)
+                    #os.remove(toapp_dir)
+                else:
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend.to_csv(res_dir,index = False,header=True)
+                    #os.remove(toapp_dir)
         #os.chdir('../')
         #os.chdir(outputFolder)
 
@@ -1251,7 +1425,7 @@ if __name__ == "__main__":
     
     if args.CHG:
         con='CHG'
-        Parallel(n_jobs=args.cores)(delayed(CHGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH) for bamfile in spbam_list)
+        Parallel(n_jobs=args.cores)(delayed(CHGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt) for bamfile in spbam_list)
     
         # merge .csv within sample
         for file in spbam_list:
@@ -1271,7 +1445,24 @@ if __name__ == "__main__":
                     Toappend = pd.read_csv(toapp_dir)
                     Toappend.to_csv(res_dir,index = False,header=True)
                     #os.remove(toapp_dir)
-
+        if args.opt:
+            for file in spbam_list:
+            filename, file_extension = os.path.splitext(file)
+            sample = str.split(file,'_')[0]
+            print("sample = ",sample)
+            if not sample == filename:
+                res_dir = Folder + con + '_opt_' + str(sample) + '.csv'
+                toapp_dir = Folder + con + '_opt_' +file + '.csv'
+                if os.path.exists(res_dir):
+                    Tomod = pd.read_csv(res_dir) 
+                    Toappend = pd.read_csv(toapp_dir)
+                    Tomod = Tomod.append(Toappend)
+                    Tomod.to_csv(res_dir,index = False,header=True)
+                    #os.remove(toapp_dir)
+                else:
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend.to_csv(res_dir,index = False,header=True)
+                    #os.remove(toapp_dir)
         #os.chdir('../')
         #os.chdir(outputFolder)
 
@@ -1300,11 +1491,11 @@ if __name__ == "__main__":
 
     if args.CHH:
         con='CHH'
-        Parallel(n_jobs=args.cores)(delayed(CHHgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH) for bamfile in spbam_list)
+        Parallel(n_jobs=args.cores)(delayed(CHHgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt) for bamfile in spbam_list)
     
         # merge .csv within sample
         for file in spbam_list:
-            #filename, file_extension = os.path.splitext(file)
+            filename, file_extension = os.path.splitext(file)
             sample = str.split(file,'_')[0]
             print("sample = ",sample)
             if not sample == filename:
@@ -1320,7 +1511,26 @@ if __name__ == "__main__":
                     Toappend = pd.read_csv(toapp_dir)
                     Toappend.to_csv(res_dir,index = False,header=True)
                     #os.remove(toapp_dir)
-
+        
+        if args.opt:
+            for file in spbam_list:
+            filename, file_extension = os.path.splitext(file)
+            sample = str.split(file,'_')[0]
+            print("sample = ",sample)
+            if not sample == filename:
+                res_dir = Folder + con + '_opt_' + str(sample) + '.csv'
+                toapp_dir = Folder + con + '_opt_' +file + '.csv'
+                if os.path.exists(res_dir):
+                    Tomod = pd.read_csv(res_dir) 
+                    Toappend = pd.read_csv(toapp_dir)
+                    Tomod = Tomod.append(Toappend)
+                    Tomod.to_csv(res_dir,index = False,header=True)
+                    #os.remove(toapp_dir)
+                else:
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend.to_csv(res_dir,index = False,header=True)
+                    #os.remove(toapp_dir)
+            
         #os.chdir('../')
         #os.chdir(outputFolder)
 
