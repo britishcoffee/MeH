@@ -279,7 +279,6 @@ def MeHperwindow(pat,start,dis,chrom,D,w,ML,depth,optional,MeH=2,dist=1,strand='
             #print("count = ",count)
             #print("phylotree = ",phylotree)
         Q=sum(phylotree*countn)
-        #div=sum(phylotree*((count/Q)**q))**(1/(1-q))
         score=sum(phylotree*((countn/Q)**2))**(-1)
     elif MeH==4: #Entropy
         score=0
@@ -288,26 +287,26 @@ def MeHperwindow(pat,start,dis,chrom,D,w,ML,depth,optional,MeH=2,dist=1,strand='
                 score-=(i/m)*np.log2(i/m)/w
     elif MeH==5: #Epipoly
         score=1-((count/m)**2).sum(axis=0)
-    out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':round(div,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])    
+    out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':round(score,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])    
     
     if optional:
-        if d==3:
+        if w==3:
             opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[0],'p02':count[1],'p03':count[2],'p04':count[3],\
-                        'p05':count[4],'p06':count[5],'p07':count[6],'p08':count[7],'MeH':round(div,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])     
-        if d==4:
+                        'p05':count[4],'p06':count[5],'p07':count[6],'p08':count[7],'MeH':round(score,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])     
+        if w==4:
             opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[0],'p02':count[1],'p03':count[2],'p04':count[3],\
                         'p05':count[4],'p06':count[5],'p07':count[6],'p08':count[7],'p09':count[8],'p10':count[9],\
                         'p11':count[10],'p12':count[11],'p13':count[12],'p14':count[13],'p15':count[14],\
-                        'p16':count[15],'MeH':round(div,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])   
-        if d==5:
+                        'p16':count[15],'MeH':round(score,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])   
+        if w==5:
             opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[0],'p02':count[1],'p03':count[2],'p04':count[3],\
                         'p05':count[4],'p06':count[5],'p07':count[6],'p08':count[7],'p09':count[8],'p10':count[9],\
                         'p11':count[10],'p12':count[11],'p13':count[12],'p14':count[13],'p15':count[14],\
                         'p16':count[15],'p17':count[16],'p18':count[17],'p19':count[18],'p20':count[19],\
                         'p21':count[20],'p22':count[21],'p23':count[22],'p24':count[23],'p25':count[24],\
                         'p26':count[25],'p27':count[26],'p28':count[27],'p29':count[28],'p30':count[29],\
-                        'p31':count[30],'p32':count[31],'MeH':round(div,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])    
-        if d==6:
+                        'p31':count[30],'p32':count[31],'MeH':round(score,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])    
+        if w==6:
             opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[0],'p02':count[1],'p03':count[2],'p04':count[3],\
                         'p05':count[4],'p06':count[5],'p07':count[6],'p08':count[7],'p09':count[8],'p10':count[9],\
                         'p11':count[10],'p12':count[11],'p13':count[12],'p14':count[13],'p15':count[14],\
@@ -320,7 +319,7 @@ def MeHperwindow(pat,start,dis,chrom,D,w,ML,depth,optional,MeH=2,dist=1,strand='
                         'p46':count[45],'p47':count[46],'p48':count[47],'p49':count[48],'p50':count[49],\
                         'p51':count[50],'p52':count[51],'p53':count[52],'p54':count[53],'p55':count[54],\
                         'p56':count[55],'p57':count[56],'p58':count[57],'p59':count[58],'p60':count[59],\
-                        'p61':count[60],'p62':count[61],'p63':count[62],'p64':count[63],'MeH':round(div,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])    
+                        'p61':count[60],'p62':count[61],'p63':count[62],'p64':count[63],'MeH':round(score,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])    
         return out, opt
     else:
         return out
@@ -463,10 +462,17 @@ def CGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                     if enough_reads(window,w,complete=True):
                         ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
-                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                        if optional:
+                            toappend,opt=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
                                         dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='f')
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='f',optional=optional)
+                            Resultopt=Resultopt.append(opt)
+                        else:
+                            toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='f',optional=optional)
                         ResultPW=ResultPW.append(toappend)
+                        
                     else:
                         if depth>3:
                             ML=float(MC)/float(depth)
@@ -510,10 +516,17 @@ def CGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                     if enough_reads(window,w,complete=True):
                         ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
-                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                        if optional:
+                            toappend,opt=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
                                         dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r')
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r',optional=optional)
+                            Resultopt=Resultopt.append(opt)
+                        else:
+                            toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r',optional=optional)
                         ResultPW=ResultPW.append(toappend)
+                        
                     else:
                         if depth>3:
                             ML=float(MC)/float(depth)
@@ -558,10 +571,17 @@ def CGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                     if enough_reads(window,w,complete=True):
                         ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
-                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                        if optional:
+                            toappend,opt=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
                                         dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='f')
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='f',optional=optional)
+                            Resultopt=Resultopt.append(opt)
+                        else:
+                            toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='f',optional=optional)
                         ResultPW=ResultPW.append(toappend)
+                        
                     else:
                         if depth>3:
                             ML=float(MC)/float(depth)
@@ -573,6 +593,8 @@ def CGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
 
                         if ResultPW.shape[0] % 100000 == 1:   
                             ResultPW.to_csv(r"MeHdata/CG_%s.csv"%(filename),index = False, header=True)
+                            if optional:
+                                Resultopt.to_csv(r"MeHdata/CG_opt_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
                                 print("Checkpoint CG. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
 
@@ -610,10 +632,17 @@ def CGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                     if enough_reads(window,w,complete=True):
                         ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
-                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                        if optional:
+                            toappend,opt=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
                                         dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r')
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r',optional=optional)
+                            Resultopt=Resultopt.append(opt)
+                        else:
+                            toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r',optional=optional)
                         ResultPW=ResultPW.append(toappend)
+                        
                     else:
                         if depth>3:
                             ML=float(MC)/float(depth)
@@ -751,10 +780,17 @@ def CHHgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                     if enough_reads(window,w,complete=True):
                         ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
-                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                        if optional:
+                            toappend,opt=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
                                         dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='f')
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='f',optional=optional)
+                            Resultopt=Resultopt.append(opt)
+                        else:
+                            toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='f',optional=optional)
                         ResultPW=ResultPW.append(toappend)
+                        
                     # else output methylation level
                     else:
                         if depth>3:
@@ -802,10 +838,17 @@ def CHHgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                     if enough_reads(window,w,complete=True):
                         ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
-                        toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                        if optional:
+                            toappend,opt=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
                                         dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r')
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r',optional=optional)
+                            Resultopt=Resultopt.append(opt)
+                        else:
+                            toappend=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
+                                        dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
+                                        chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r',optional=optional)
                         ResultPW=ResultPW.append(toappend)
+                        
                     else:
                         if depth>3:
                             ML=float(MC)/float(depth)
@@ -1363,7 +1406,7 @@ if __name__ == "__main__":
     
         # merge .csv within sample
         for file in spbam_list:
-            #filename, file_extension = os.path.splitext(file)
+            filename, file_extension = os.path.splitext(file)
             sample = str.split(file,'_')[0]
             print("sample = ",sample)
             if not sample == filename:
@@ -1381,22 +1424,22 @@ if __name__ == "__main__":
                     #os.remove(toapp_dir)
         if args.opt:
             for file in spbam_list:
-            filename, file_extension = os.path.splitext(file)
-            sample = str.split(file,'_')[0]
-            print("sample = ",sample)
-            if not sample == filename:
-                res_dir = Folder + con + '_opt_' + str(sample) + '.csv'
-                toapp_dir = Folder + con + '_opt_' +file + '.csv'
-                if os.path.exists(res_dir):
-                    Tomod = pd.read_csv(res_dir) 
-                    Toappend = pd.read_csv(toapp_dir)
-                    Tomod = Tomod.append(Toappend)
-                    Tomod.to_csv(res_dir,index = False,header=True)
-                    #os.remove(toapp_dir)
-                else:
-                    Toappend = pd.read_csv(toapp_dir)
-                    Toappend.to_csv(res_dir,index = False,header=True)
-                    #os.remove(toapp_dir)
+                filename, file_extension = os.path.splitext(file)
+                sample = str.split(file,'_')[0]
+                print("sample = ",sample)
+                if not sample == filename:
+                    res_dir = Folder + con + '_opt_' + str(sample) + '.csv'
+                    toapp_dir = Folder + con + '_opt_' +file + '.csv'
+                    if os.path.exists(res_dir):
+                        Tomod = pd.read_csv(res_dir) 
+                        Toappend = pd.read_csv(toapp_dir)
+                        Tomod = Tomod.append(Toappend)
+                        Tomod.to_csv(res_dir,index = False,header=True)
+                        #os.remove(toapp_dir)
+                    else:
+                        Toappend = pd.read_csv(toapp_dir)
+                        Toappend.to_csv(res_dir,index = False,header=True)
+                        #os.remove(toapp_dir)
         #os.chdir('../')
         #os.chdir(outputFolder)
 
@@ -1429,7 +1472,7 @@ if __name__ == "__main__":
     
         # merge .csv within sample
         for file in spbam_list:
-            #filename, file_extension = os.path.splitext(file)
+            filename, file_extension = os.path.splitext(file)
             sample = str.split(file,'_')[0]
             print("sample = ",sample)
             if not sample == filename:
@@ -1440,29 +1483,29 @@ if __name__ == "__main__":
                     Toappend = pd.read_csv(toapp_dir)
                     Tomod = Tomod.append(Toappend)
                     Tomod.to_csv(res_dir,index = False,header=True)
-                    #os.remove(toapp_dir)
+                    os.remove(toapp_dir)
                 else:
                     Toappend = pd.read_csv(toapp_dir)
                     Toappend.to_csv(res_dir,index = False,header=True)
-                    #os.remove(toapp_dir)
+                    os.remove(toapp_dir)
         if args.opt:
             for file in spbam_list:
-            filename, file_extension = os.path.splitext(file)
-            sample = str.split(file,'_')[0]
-            print("sample = ",sample)
-            if not sample == filename:
-                res_dir = Folder + con + '_opt_' + str(sample) + '.csv'
-                toapp_dir = Folder + con + '_opt_' +file + '.csv'
-                if os.path.exists(res_dir):
-                    Tomod = pd.read_csv(res_dir) 
-                    Toappend = pd.read_csv(toapp_dir)
-                    Tomod = Tomod.append(Toappend)
-                    Tomod.to_csv(res_dir,index = False,header=True)
-                    #os.remove(toapp_dir)
-                else:
-                    Toappend = pd.read_csv(toapp_dir)
-                    Toappend.to_csv(res_dir,index = False,header=True)
-                    #os.remove(toapp_dir)
+                filename, file_extension = os.path.splitext(file)
+                sample = str.split(file,'_')[0]
+                print("sample = ",sample)
+                if not sample == filename:
+                    res_dir = Folder + con + '_opt_' + str(sample) + '.csv'
+                    toapp_dir = Folder + con + '_opt_' +file + '.csv'
+                    if os.path.exists(res_dir):
+                        Tomod = pd.read_csv(res_dir) 
+                        Toappend = pd.read_csv(toapp_dir)
+                        Tomod = Tomod.append(Toappend)
+                        Tomod.to_csv(res_dir,index = False,header=True)
+                        os.remove(toapp_dir)
+                    else:
+                        Toappend = pd.read_csv(toapp_dir)
+                        Toappend.to_csv(res_dir,index = False,header=True)
+                        os.remove(toapp_dir)
         #os.chdir('../')
         #os.chdir(outputFolder)
 
@@ -1514,23 +1557,23 @@ if __name__ == "__main__":
         
         if args.opt:
             for file in spbam_list:
-            filename, file_extension = os.path.splitext(file)
-            sample = str.split(file,'_')[0]
-            print("sample = ",sample)
-            if not sample == filename:
-                res_dir = Folder + con + '_opt_' + str(sample) + '.csv'
-                toapp_dir = Folder + con + '_opt_' +file + '.csv'
-                if os.path.exists(res_dir):
-                    Tomod = pd.read_csv(res_dir) 
-                    Toappend = pd.read_csv(toapp_dir)
-                    Tomod = Tomod.append(Toappend)
-                    Tomod.to_csv(res_dir,index = False,header=True)
-                    #os.remove(toapp_dir)
-                else:
-                    Toappend = pd.read_csv(toapp_dir)
-                    Toappend.to_csv(res_dir,index = False,header=True)
-                    #os.remove(toapp_dir)
-            
+                filename, file_extension = os.path.splitext(file)
+                sample = str.split(file,'_')[0]
+                print("sample = ",sample)
+                if not sample == filename:
+                    res_dir = Folder + con + '_opt_' + str(sample) + '.csv'
+                    toapp_dir = Folder + con + '_opt_' +file + '.csv'
+                    if os.path.exists(res_dir):
+                        Tomod = pd.read_csv(res_dir) 
+                        Toappend = pd.read_csv(toapp_dir)
+                        Tomod = Tomod.append(Toappend)
+                        Tomod.to_csv(res_dir,index = False,header=True)
+                        #os.remove(toapp_dir)
+                    else:
+                        Toappend = pd.read_csv(toapp_dir)
+                        Toappend.to_csv(res_dir,index = False,header=True)
+                        #os.remove(toapp_dir)
+
         #os.chdir('../')
         #os.chdir(outputFolder)
 
