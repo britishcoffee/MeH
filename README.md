@@ -164,6 +164,7 @@ Comp1$DHR <- (Comp1$pvalue<0.05)*(abs(Comp1$delta)>1)
 geneloc<-read.table('../genelist.txt',header=TRUE)
 ```
 <img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image7.png?raw=true" width="400">
+
 ```R
 genelist<-foreach(i = 1:dim(Comp1)[1],.combine = rbind) %dopar% findgene(Comp1[i,c("chrom","bin","strand")]) 
 ```
