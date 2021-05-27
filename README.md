@@ -156,14 +156,14 @@ Comp1<-data.frame(foreach(i = 1:dim(new)[1],.combine = rbind) %dopar%
 Comp1$DHR <- (Comp1$pvalue<0.05)*(abs(Comp1$delta)>1)
 ```
 
-<img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image6.png?raw=true" width="600">
+<img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image6.png?raw=true" width="450">
 
 #### DHG analysis if bed file is given as .txt with each row representing a gene and consists of gene name, chromosome number, TSS, TES and strand as 'f' (forward) or 'r' (reverse)
 
 ```R
 geneloc<-read.table('../genelist.txt',header=TRUE)
 ```
-<img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image7.png?raw=true" width="400">
+<img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image7.png?raw=true" width="300">
 
 ```R
 genelist<-foreach(i = 1:dim(Comp1)[1],.combine = rbind) %dopar% findgene(Comp1[i,c("chrom","bin","strand")]) 
