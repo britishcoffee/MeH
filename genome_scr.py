@@ -291,35 +291,35 @@ def MeHperwindow(pat,start,dis,chrom,D,w,ML,depth,optional,MeH=2,dist=1,strand='
     
     if optional:
         if w==3:
-            opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[0],'p02':count[1],'p03':count[2],'p04':count[3],\
-                        'p05':count[4],'p06':count[5],'p07':count[6],'p08':count[7],'MeH':round(score,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])     
+            opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[1],'p02':count[2],'p03':count[3],'p04':count[4],\
+                        'p05':count[5],'p06':count[6],'p07':count[7],'p08':count[8],'MeH':round(score,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])     
         if w==4:
-            opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[0],'p02':count[1],'p03':count[2],'p04':count[3],\
-                        'p05':count[4],'p06':count[5],'p07':count[6],'p08':count[7],'p09':count[8],'p10':count[9],\
-                        'p11':count[10],'p12':count[11],'p13':count[12],'p14':count[13],'p15':count[14],\
-                        'p16':count[15],'MeH':round(score,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])   
+            opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[1],'p02':count[2],'p03':count[3],'p04':count[4],\
+                        'p05':count[5],'p06':count[6],'p07':count[7],'p08':count[8],'p09':count[9],'p10':count[10],\
+                        'p11':count[11],'p12':count[12],'p13':count[13],'p14':count[14],'p15':count[15],\
+                        'p16':count[16],'MeH':round(score,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])   
         if w==5:
-            opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[0],'p02':count[1],'p03':count[2],'p04':count[3],\
-                        'p05':count[4],'p06':count[5],'p07':count[6],'p08':count[7],'p09':count[8],'p10':count[9],\
-                        'p11':count[10],'p12':count[11],'p13':count[12],'p14':count[13],'p15':count[14],\
-                        'p16':count[15],'p17':count[16],'p18':count[17],'p19':count[18],'p20':count[19],\
-                        'p21':count[20],'p22':count[21],'p23':count[22],'p24':count[23],'p25':count[24],\
-                        'p26':count[25],'p27':count[26],'p28':count[27],'p29':count[28],'p30':count[29],\
-                        'p31':count[30],'p32':count[31],'MeH':round(score,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])    
+            opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[1],'p02':count[2],'p03':count[3],'p04':count[4],\
+                        'p05':count[5],'p06':count[6],'p07':count[7],'p08':count[8],'p09':count[9],'p10':count[10],\
+                        'p11':count[11],'p12':count[12],'p13':count[13],'p14':count[14],'p15':count[15],\
+                        'p16':count[16],'p17':count[17],'p18':count[18],'p19':count[19],'p20':count[20],\
+                        'p21':count[21],'p22':count[22],'p23':count[23],'p24':count[24],'p25':count[25],\
+                        'p26':count[26],'p27':count[27],'p28':count[28],'p29':count[29],'p30':count[30],\
+                        'p31':count[31],'p32':count[32],'MeH':round(score,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])    
         if w==6:
-            opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[0],'p02':count[1],'p03':count[2],'p04':count[3],\
-                        'p05':count[4],'p06':count[5],'p07':count[6],'p08':count[7],'p09':count[8],'p10':count[9],\
-                        'p11':count[10],'p12':count[11],'p13':count[12],'p14':count[13],'p15':count[14],\
-                        'p16':count[15],'p17':count[16],'p18':count[17],'p19':count[18],'p20':count[19],\
-                        'p21':count[20],'p22':count[21],'p23':count[22],'p24':count[23],'p25':count[24],\
-                        'p26':count[25],'p27':count[26],'p28':count[27],'p29':count[28],'p30':count[29],\
-                        'p31':count[30],'p32':count[31],'p33':count[32],'p34':count[33],'p35':count[34],\
-                        'p36':count[35],'p37':count[36],'p38':count[37],'p39':count[38],'p40':count[39],\
-                        'p41':count[40],'p42':count[41],'p43':count[42],'p44':count[43],'p45':count[44],\
-                        'p46':count[45],'p47':count[46],'p48':count[47],'p49':count[48],'p50':count[49],\
-                        'p51':count[50],'p52':count[51],'p53':count[52],'p54':count[53],'p55':count[54],\
-                        'p56':count[55],'p57':count[56],'p58':count[57],'p59':count[58],'p60':count[59],\
-                        'p61':count[60],'p62':count[61],'p63':count[62],'p64':count[63],'MeH':round(score,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])    
+            opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[1],'p02':count[2],'p03':count[3],'p04':count[4],\
+                        'p05':count[5],'p06':count[6],'p07':count[7],'p08':count[8],'p09':count[9],'p10':count[10],\
+                        'p11':count[11],'p12':count[12],'p13':count[13],'p14':count[14],'p15':count[15],\
+                        'p16':count[16],'p17':count[17],'p18':count[18],'p19':count[19],'p20':count[20],\
+                        'p21':count[21],'p22':count[22],'p23':count[23],'p24':count[24],'p25':count[25],\
+                        'p26':count[26],'p27':count[27],'p28':count[28],'p29':count[29],'p30':count[30],\
+                        'p31':count[31],'p32':count[32],'p33':count[33],'p34':count[34],'p35':count[35],\
+                        'p36':count[36],'p37':count[37],'p38':count[38],'p39':count[39],'p40':count[40],\
+                        'p41':count[41],'p42':count[42],'p43':count[43],'p44':count[44],'p45':count[45],\
+                        'p46':count[46],'p47':count[47],'p48':count[48],'p49':count[49],'p50':count[50],\
+                        'p51':count[51],'p52':count[52],'p53':count[53],'p54':count[54],'p55':count[55],\
+                        'p56':count[56],'p57':count[57],'p58':count[58],'p59':count[59],'p60':count[60],\
+                        'p61':count[61],'p62':count[62],'p63':count[63],'p64':count[64],'MeH':round(score,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])    
         return out, opt
     else:
         return out
