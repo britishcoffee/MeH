@@ -30,14 +30,17 @@ ln -s [directory_to_reference_genome].fa*
 ```
 ### 5. Run the program genome_scr.py (see examples below)
 
-#### 'CG' only with window size of 4 cytosines and 4 cores parallel processing (default score is pairwise-similarity-based method, default distance between methylation patterns is Hamming distance)
+#### Examples
 
-```js
+```ruby
+# 'CG' only with window size of 4 cytosines and 4 cores parallel processing (default score is 
+# pairwise-similarity-based method, default distance between methylation patterns is Hamming distance)
     python genome_scr.py -w 4 -c 4 --CG
 ```
-#### 'CG', 'CHG' and 'CHH' with window size of 4 cytosines, weighted degree kernel for pairwise distances between methylation patterns and 8 cores parallel processing
 
-```js
+```ruby
+# 'CG', 'CHG' and 'CHH' with window size of 4 cytosines, weighted degree kernel for pairwise distances 
+# between methylation patterns and 8 cores parallel processing
     python genome_scr.py -w 4 -c 8 --CG --CHG --CHH -d 2
 ```
 
@@ -52,7 +55,7 @@ library(dplyr)
 install.packages("foreach")
 library(foreach)
 
-MeH.t=function(vector,conditions,compare) {
+MeH.t = function(vector,conditions,compare) {
   ind1<-which(conditions == compare[1])+3 # +2 for chrom,bin and strand columns
   ind2<-which(conditions == compare[2])+3
   #l=length(vector)
