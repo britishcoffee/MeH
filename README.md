@@ -1,4 +1,8 @@
+## System requirements
 
+* python 2.7 +
+* pandas package 0.21 +
+* pysam package 0.16.0.1 +
 
 ## Methylation heterogeneity profiling
 
