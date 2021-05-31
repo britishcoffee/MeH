@@ -350,7 +350,7 @@ def impute(window,w):
     return window 
 
 
-def CGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
+def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     filename, file_extension = os.path.splitext(bamfile)
     sample = str.split(filename,'_')[0]
     #directory = "Outputs/" + str(sample) + '.csv' #original filename of .bams
@@ -474,7 +474,7 @@ def CGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                         ResultPW=ResultPW.append(toappend)
                         
                     else:
-                        if depth>3:
+                        if depth>3 and melv:
                             ML=float(MC)/float(depth)
                             toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
                             #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
@@ -528,7 +528,7 @@ def CGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                         ResultPW=ResultPW.append(toappend)
                         
                     else:
-                        if depth>3:
+                        if depth>3 and melv:
                             ML=float(MC)/float(depth)
                             toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
                             #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
@@ -583,7 +583,7 @@ def CGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                         ResultPW=ResultPW.append(toappend)
                         
                     else:
-                        if depth>3:
+                        if depth>3 and melv:
                             ML=float(MC)/float(depth)
                             toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
                             #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
@@ -644,7 +644,7 @@ def CGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                         ResultPW=ResultPW.append(toappend)
                         
                     else:
-                        if depth>3:
+                        if depth>3 and melv:
                             ML=float(MC)/float(depth)
                             toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
                             #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
@@ -671,7 +671,7 @@ def CGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
             
     #samfile.close()  
     
-def CHHgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
+def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     filename, file_extension = os.path.splitext(bamfile)
     sample = str.split(filename,'_')[0]
     #directory = "Outputs/" + str(sample) + '.csv' #original filename of .bams
@@ -793,7 +793,7 @@ def CHHgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                         
                     # else output methylation level
                     else:
-                        if depth>3:
+                        if depth>3 and melv:
                             ML=float(MC)/float(depth)
                             toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
                             #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
@@ -850,7 +850,7 @@ def CHHgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                         ResultPW=ResultPW.append(toappend)
                         
                     else:
-                        if depth>3:
+                        if depth>3 and melv:
                             ML=float(MC)/float(depth)
                             toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
                             #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
@@ -907,7 +907,7 @@ def CHHgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                         
     
                     else:
-                        if depth>3:
+                        if depth>3 and melv:
                             ML=float(MC)/float(depth)
                             toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
                             #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
@@ -967,7 +967,7 @@ def CHHgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                                         chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,strand='r',optional=optional)
                         ResultPW=ResultPW.append(toappend)
                     else:
-                        if depth>3:
+                        if depth>3 and melv:
                             ML=float(MC)/float(depth)
                             toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
                             #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
@@ -994,7 +994,7 @@ def CHHgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                             
     print("Done CHH. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
             
-def CHGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
+def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     filename, file_extension = os.path.splitext(bamfile)
     sample = str.split(filename,'_')[0]
     #directory = "Outputs/" + str(sample) + '.csv' #original filename of .bams
@@ -1116,7 +1116,7 @@ def CHGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                         ResultPW=ResultPW.append(toappend)
                         
                     else:
-                        if depth>3:
+                        if depth>3 and melv:
                             ML=float(MC)/float(depth)
                             toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
                             #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
@@ -1172,7 +1172,7 @@ def CHGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                         ResultPW=ResultPW.append(toappend)
                         
                     else:
-                        if depth>3:
+                        if depth>3 and melv:
                             ML=float(MC)/float(depth)
                             toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
                             #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
@@ -1227,7 +1227,7 @@ def CHGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                         ResultPW=ResultPW.append(toappend)
                         
                     else:
-                        if depth>3:
+                        if depth>3 and melv:
                             ML=float(MC)/float(depth)
                             toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth}, index=[0])    
                             ResultPW=ResultPW.append(toappend)
@@ -1284,7 +1284,7 @@ def CHGgenome_scr(bamfile,w,fa,optional,silence=False,dist=1,MeH=2):
                                         chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth,optional=optional,strand='r')
                         ResultPW=ResultPW.append(toappend)
                     else:
-                        if depth>3:
+                        if depth>3 and melv:
                             ML=float(MC)/float(depth)
                             toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
                             ResultPW=ResultPW.append(toappend)
@@ -1353,11 +1353,11 @@ parser.add_argument("-c", "--cores",type=int, default=4, help='number of cores')
 parser.add_argument("-m", "--MeH",type=int, default=2, help='Methylation heterogeneity score 1:Abundance 2:PW 3:Phylogeny')
 parser.add_argument("-d", "--dist",type=int, default=1, help='Distance between methylation patterns 1:Hamming 2:WDK')
 #parser.add_argument("-g", "--context",type=int, default=1, help='Cytosine context 1:CG 2:CHG 3:CHH')
-parser.add_argument('--CG', default=False, action='store_true')
-parser.add_argument('--CHG', default=False, action='store_true')
-parser.add_argument('--CHH', default=False, action='store_true')
-parser.add_argument('--opt', default=False, action='store_true')
-
+parser.add_argument("--CG", default=False, action='store_true', help='Include genomic context CG')
+parser.add_argument("--CHG", default=False, action='store_true', help='Include genomic context CHG')
+parser.add_argument("--CHH", default=False, action='store_true', help='Include genomic context CHH')
+parser.add_argument("--opt", default=False, action='store_true', help='Output compositions of methylation patterns')
+parser.add_argument('--mlv', default=False, action='store_true', help='Outputs methylation levels')
 
 
 args = parser.parse_args()
@@ -1402,9 +1402,9 @@ if __name__ == "__main__":
     #start=t.time()
     if args.CG:
         con='CG'
-        Parallel(n_jobs=args.cores)(delayed(CGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt) for bamfile in spbam_list)
+        Parallel(n_jobs=args.cores)(delayed(CGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
     
-        # merge .csv within sample
+        # merge MeH within sample
         for file in spbam_list:
             filename, file_extension = os.path.splitext(file)
             sample = str.split(file,'_')[0]
@@ -1442,8 +1442,29 @@ if __name__ == "__main__":
                         #os.remove(toapp_dir)
         #os.chdir('../')
         #os.chdir(outputFolder)
+        
+        # merge ML between samples
+        if args.mlv:
+            for sample in bam_list: 
+                tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
+                res_dir = Folder +  con + '_ML_' + 'Results.csv'
+                if os.path.exists(res_dir):
+                    Result = pd.read_csv(res_dir)
+                    Tomerge = pd.read_csv(tomerge_dir)
+                    Tomerge = Tomerge.drop(columns=['dis','MeH','depth'])
+                    Tomerge.dropna(axis = 0, thresh=4, inplace = True)
+                    Tomerge = Tomerge.rename(columns={'ML': sample})
+                    Result = Result.merge(Tomerge, on=['chrom','pos','strand'])
+                    Result = Result.drop_duplicates() 
+                    Result.to_csv(Folder + con + '_ML_' +'Results.csv',index = False,header=True)
+                else:
+                    Result = pd.read_csv(tomerge_dir)
+                    Result = Result.drop(columns=['dis','MeH','depth'])
+                    Result.dropna(axis = 0, thresh=4, inplace = True)
+                    Result = Result.rename(columns={'ML': sample})
+                    Result.to_csv(Folder + con + '_ML_' +'Results.csv',index = False,header=True)
 
-        # merge .csv between samples
+        # merge MeH between samples
         for sample in bam_list: 
             tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
             res_dir = Folder +  con + '_' + 'Results.csv'
@@ -1451,6 +1472,7 @@ if __name__ == "__main__":
                 Result = pd.read_csv(res_dir)
                 Tomerge = pd.read_csv(tomerge_dir)
                 Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
+                Tomerge.dropna(axis = 0, thresh=4, inplace = True)
                 Tomerge = Tomerge.rename(columns={'MeH': sample})
                 Result = Result.merge(Tomerge, on=['chrom','pos','strand'])
                 Result = Result.drop_duplicates() 
@@ -1459,6 +1481,7 @@ if __name__ == "__main__":
             else:
                 Result = pd.read_csv(tomerge_dir)
                 Result = Result.drop(columns=['dis','ML','depth'])
+                Result.dropna(axis = 0, thresh=4, inplace = True)
                 Result = Result.rename(columns={'MeH': sample})
                 Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
                 os.remove(tomerge_dir)
@@ -1468,9 +1491,9 @@ if __name__ == "__main__":
     
     if args.CHG:
         con='CHG'
-        Parallel(n_jobs=args.cores)(delayed(CHGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt) for bamfile in spbam_list)
+        Parallel(n_jobs=args.cores)(delayed(CHGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
     
-        # merge .csv within sample
+        # merge MeH within sample
         for file in spbam_list:
             filename, file_extension = os.path.splitext(file)
             sample = str.split(file,'_')[0]
@@ -1508,15 +1531,39 @@ if __name__ == "__main__":
                         os.remove(toapp_dir)
         #os.chdir('../')
         #os.chdir(outputFolder)
+        
+        # merge ML between samples
+        if args.mlv:
+            for sample in bam_list: 
+                tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
+                res_dir = Folder +  con + '_ML_' + 'Results.csv'
+                if os.path.exists(res_dir):
+                    Result = pd.read_csv(res_dir)
+                    Tomerge = pd.read_csv(tomerge_dir)
+                    Tomerge = Tomerge.drop(columns=['dis','MeH','depth'])
+                    Tomerge.dropna(axis = 0, thresh=4, inplace = True)
+                    Tomerge = Tomerge.rename(columns={'ML': sample})
+                    Result = Result.merge(Tomerge, on=['chrom','pos','strand'])
+                    Result = Result.drop_duplicates() 
+                    Result.to_csv(Folder + con + '_ML_' +'Results.csv',index = False,header=True)
+                    
+                else:
+                    Result = pd.read_csv(tomerge_dir)
+                    Result = Result.drop(columns=['dis','MeH','depth'])
+                    Result.dropna(axis = 0, thresh=4, inplace = True)
+                    Result = Result.rename(columns={'ML': sample})
+                    Result.to_csv(Folder + con + '_ML_' +'Results.csv',index = False,header=True)
 
-        # merge .csv between samples
+        # merge MeH between samples
         for sample in bam_list: 
             tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
             res_dir = Folder +  con + '_' + 'Results.csv'
             if os.path.exists(res_dir):
                 Result = pd.read_csv(res_dir)
                 Tomerge = pd.read_csv(tomerge_dir)
+                
                 Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
+                Tomerge.dropna(axis = 0, thresh=4, inplace = True)
                 Tomerge = Tomerge.rename(columns={'MeH': sample})
                 Result = Result.merge(Tomerge, on=['chrom','pos','strand'])
                 Result = Result.drop_duplicates() 
@@ -1525,6 +1572,7 @@ if __name__ == "__main__":
             else:
                 Result = pd.read_csv(tomerge_dir)
                 Result = Result.drop(columns=['dis','ML','depth'])
+                Result.dropna(axis = 0, thresh=4, inplace = True)
                 Result = Result.rename(columns={'MeH': sample})
                 Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
                 os.remove(tomerge_dir)
@@ -1534,9 +1582,9 @@ if __name__ == "__main__":
 
     if args.CHH:
         con='CHH'
-        Parallel(n_jobs=args.cores)(delayed(CHHgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt) for bamfile in spbam_list)
+        Parallel(n_jobs=args.cores)(delayed(CHHgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
     
-        # merge .csv within sample
+        # merge MeH within sample
         for file in spbam_list:
             filename, file_extension = os.path.splitext(file)
             sample = str.split(file,'_')[0]
@@ -1576,8 +1624,30 @@ if __name__ == "__main__":
 
         #os.chdir('../')
         #os.chdir(outputFolder)
+        
+        # merge ML between samples
+        if args.mlv:
+            for sample in bam_list: 
+                tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
+                res_dir = Folder +  con + '_ML_' + 'Results.csv'
+                if os.path.exists(res_dir):
+                    Result = pd.read_csv(res_dir)
+                    Tomerge = pd.read_csv(tomerge_dir)
+                    Tomerge = Tomerge.drop(columns=['dis','MeH','depth'])
+                    Tomerge.dropna(axis = 0, thresh=4, inplace = True)
+                    Tomerge = Tomerge.rename(columns={'ML': sample})
+                    Result = Result.merge(Tomerge, on=['chrom','pos','strand'])
+                    Result = Result.drop_duplicates() 
+                    Result.to_csv(Folder + con + '_ML_' +'Results.csv',index = False,header=True)
+                    
+                else:
+                    Result = pd.read_csv(tomerge_dir)
+                    Result = Result.drop(columns=['dis','MeH','depth'])
+                    Result.dropna(axis = 0, thresh=4, inplace = True)
+                    Result = Result.rename(columns={'ML': sample})
+                    Result.to_csv(Folder + con + '_ML_' +'Results.csv',index = False,header=True)
 
-        # merge .csv between samples
+        # merge MeH between samples
         for sample in bam_list: 
             tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
             res_dir = Folder +  con + '_' + 'Results.csv'
@@ -1585,6 +1655,7 @@ if __name__ == "__main__":
                 Result = pd.read_csv(res_dir)
                 Tomerge = pd.read_csv(tomerge_dir)
                 Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
+                Tomerge.dropna(axis = 0, thresh=4, inplace = True)
                 Tomerge = Tomerge.rename(columns={'MeH': sample})
                 Result = Result.merge(Tomerge, on=['chrom','pos','strand'])
                 Result = Result.drop_duplicates() 
@@ -1593,16 +1664,18 @@ if __name__ == "__main__":
             else:
                 Result = pd.read_csv(tomerge_dir)
                 Result = Result.drop(columns=['dis','ML','depth'])
+                Result.dropna(axis = 0, thresh=4, inplace = True)
                 Result = Result.rename(columns={'MeH': sample})
                 Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
                 os.remove(tomerge_dir)
 
         Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
-
+        print("All done. ",len(bam_list)," bam files processed and merged for CHH.")
+        
     for filename in spbam_list:
         file = Folder + filename + '.bam'
         os.remove(file)
         
-    print("All done. ",len(bam_list)," bam files processed and merged for CHH.")
+    
 
 # FINAL
