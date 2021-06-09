@@ -48,7 +48,7 @@ def coverage(methbin,complete,w):
 def enough_reads(window,w,complete):
     temp=np.isnan(window).sum(axis=1)==0
     if complete: # For heterogeneity estimation
-        return temp.sum()>=2**(w-2)
+        return temp.sum()>=2**w
     else:  # for imputation
         tempw1=np.isnan(window).sum(axis=1)==1
         return temp.sum()>=2**(w-2) and tempw1.sum()>0
@@ -353,6 +353,7 @@ def impute(window,w):
 def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     filename, file_extension = os.path.splitext(bamfile)
     sample = str.split(filename,'_')[0]
+    coverage = cov_context = 0
     #directory = "Outputs/" + str(sample) + '.csv' #original filename of .bams
     samfile = pysam.AlignmentFile("MeHdata/%s.bam" % (filename), "rb")
     fastafile = pysam.FastaFile('MeHdata/%s.fa' % fa)
@@ -394,6 +395,7 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     start=datetime.datetime.now()
     
     for pileupcolumn in samfile.pileup():
+        coverage+=1 
         chrom = pileupcolumn.reference_name
         if not silence:
             if (pileupcolumn.pos % 2000000 == 1):
@@ -401,6 +403,7 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
         
         # Forward
         if (fastafile.fetch(chrom,pileupcolumn.pos,pileupcolumn.pos+2)=='CG'):        
+            cov_context += 1
             temp = pd.DataFrame(columns=['Qname',pileupcolumn.pos])
             pileupcolumn.set_min_base_quality(0)
             for pileupread in pileupcolumn.pileups:
@@ -417,7 +420,8 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                 
         # Reverse
         if pileupcolumn.pos>1:
-            if (fastafile.fetch(chrom,pileupcolumn.pos-1,pileupcolumn.pos+1)=='GC'):        
+            if (fastafile.fetch(chrom,pileupcolumn.pos-1,pileupcolumn.pos+1)=='CG'):
+                cov_context += 1
                 tempr = pd.DataFrame(columns=['Qname',pileupcolumn.pos])
                 pileupcolumn.set_min_base_quality(0)
                 for pileupread in pileupcolumn.pileups:
@@ -666,7 +670,8 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
         ResultPW.to_csv(r"MeHdata/CG_%s.csv"%(filename),index = False, header=True)
         if optional:
             Resultopt.to_csv(r"MeHdata/CG_opt_%s.csv"%(filename),index = False, header=True)
-                            
+            
+    return sample, coverage, cov_context, 'CG'        
     print("Done. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
             
     #samfile.close()  
@@ -674,6 +679,7 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
 def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     filename, file_extension = os.path.splitext(bamfile)
     sample = str.split(filename,'_')[0]
+    coverage = cov_context = 0
     #directory = "Outputs/" + str(sample) + '.csv' #original filename of .bams
     samfile = pysam.AlignmentFile("MeHdata/%s.bam" % (filename), "rb")
     fastafile = pysam.FastaFile('MeHdata/%s.fa' % fa)
@@ -712,6 +718,7 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     start=datetime.datetime.now()
     
     for pileupcolumn in samfile.pileup():
+        coverage += 1
         chrom = pileupcolumn.reference_name
         if not silence:
             if (pileupcolumn.pos % 2000000 == 1):
@@ -719,6 +726,7 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
         
         # forward
         if fastafile.fetch(chrom,pileupcolumn.pos,pileupcolumn.pos+1)=='C' and fastafile.fetch(chrom,pileupcolumn.pos+1,pileupcolumn.pos+2)!='G' and fastafile.fetch(chrom,pileupcolumn.pos+2,pileupcolumn.pos+3)!='G':        
+            cov_context += 1
             temp = pd.DataFrame(columns=['Qname',pileupcolumn.pos])
             pileupcolumn.set_min_base_quality(0)
             for pileupread in pileupcolumn.pileups:
@@ -736,6 +744,7 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
         # reverse
         if pileupcolumn.pos>2:
             if fastafile.fetch(chrom,pileupcolumn.pos,pileupcolumn.pos+1)=='G' and fastafile.fetch(chrom,pileupcolumn.pos-1,pileupcolumn.pos)!='C' and fastafile.fetch(chrom,pileupcolumn.pos-2,pileupcolumn.pos-1)!='C':        
+                cov_context += 1
                 tempr = pd.DataFrame(columns=['Qname',pileupcolumn.pos])
                 pileupcolumn.set_min_base_quality(0)
                 for pileupread in pileupcolumn.pileups:
@@ -991,7 +1000,7 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
         ResultPW.to_csv(r"MeHdata/CHH_%s.csv"%(filename),index = False, header=True)
         if optional:
             Resultopt.to_csv(r"MeHdata/CHH_opt_%s.csv"%(filename),index = False, header=True)
-                            
+    return sample, coverage, cov_context, 'CHH'                        
     print("Done CHH. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
             
 def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
@@ -1000,7 +1009,7 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     #directory = "Outputs/" + str(sample) + '.csv' #original filename of .bams
     samfile = pysam.AlignmentFile("MeHdata/%s.bam" % (filename), "rb")
     fastafile = pysam.FastaFile('MeHdata/%s.fa' % fa)
-        
+    coverage = cov_context = 0
     aggreR = aggreC = pd.DataFrame(columns=['Qname'])
     ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','ML','depth','strand'])
     
@@ -1037,12 +1046,14 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     start=datetime.datetime.now()
     
     for pileupcolumn in samfile.pileup():
+        coverage += 1
         chrom = pileupcolumn.reference_name
         if not silence:
             if (pileupcolumn.pos % 2000000 == 1):
                 print("CHG %s s %s w %s %s pos %s Result %s" % (datetime.datetime.now(),filename,w,chrom,pileupcolumn.pos,ResultPW.shape[0]))
         
         if fastafile.fetch(chrom,pileupcolumn.pos,pileupcolumn.pos+1)=='C' and fastafile.fetch(chrom,pileupcolumn.pos+1,pileupcolumn.pos+2)!='G' and fastafile.fetch(chrom,pileupcolumn.pos+2,pileupcolumn.pos+3)!='G':        
+            cov_context += 1
             temp = pd.DataFrame(columns=['Qname',pileupcolumn.pos])
             pileupcolumn.set_min_base_quality(0)
             for pileupread in pileupcolumn.pileups:
@@ -1060,6 +1071,7 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
         # reverse
         if pileupcolumn.pos>2:
             if fastafile.fetch(chrom,pileupcolumn.pos,pileupcolumn.pos+1)=='G' and fastafile.fetch(chrom,pileupcolumn.pos-1,pileupcolumn.pos)!='C' and fastafile.fetch(chrom,pileupcolumn.pos-2,pileupcolumn.pos-1)=='C':        
+                cov_context += 1
                 tempr = pd.DataFrame(columns=['Qname',pileupcolumn.pos])
                 pileupcolumn.set_min_base_quality(0)
                 for pileupread in pileupcolumn.pileups:
@@ -1304,7 +1316,7 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
         if optional:
             Resultopt.to_csv(r"MeHdata/CHG_opt_%s.csv"%(filename),index = False, header=True)
                             
-    
+    return sample, coverage, cov_context, 'CHG'
     print("Done CHG. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
             
         
@@ -1329,7 +1341,8 @@ def split_bam(samplenames,Folder):
         outfile.write(reads)
         statinfo_out = os.stat(fileout)
         outfile_Size = statinfo_out.st_size
-        if(outfile_Size >=337374182 and sum_Outfile_Size <= bamsize):
+        if(outfile_Size >=834182 and sum_Outfile_Size <= bamsize):
+        #if(outfile_Size >=337374182 and sum_Outfile_Size <= bamsize):
             sum_Outfile_Size = sum_Outfile_Size + outfile_Size
             x = x + 1
             spbam_list.append(fileout_base + "_" + str(x)+ext)
@@ -1356,13 +1369,14 @@ parser.add_argument("-d", "--dist",type=int, default=1, help='Distance between m
 parser.add_argument("--CG", default=False, action='store_true', help='Include genomic context CG')
 parser.add_argument("--CHG", default=False, action='store_true', help='Include genomic context CHG')
 parser.add_argument("--CHH", default=False, action='store_true', help='Include genomic context CHH')
-parser.add_argument("--opt", default=False, action='store_true', help='Output compositions of methylation patterns')
+parser.add_argument("--opt", default=False, action='store_true', help='Outputs compositions of methylation patterns')
 parser.add_argument('--mlv', default=False, action='store_true', help='Outputs methylation levels')
 
 
 args = parser.parse_args()
 
 import sys
+import time
 import os
 import pandas as pd
 import multiprocessing
@@ -1371,7 +1385,8 @@ from joblib import Parallel, delayed
 #num_cores = multiprocessing.cpu_count()
                                                 
 if __name__ == "__main__":
-
+    
+    start = time.time()
     Folder = 'MeHdata/'
 
     files = os.listdir(Folder)
@@ -1398,12 +1413,13 @@ if __name__ == "__main__":
         if file_extension=='.bam' and filename not in bam_list:
             spbam_list.append(filename)
     #print(spbam_list)
-        
+    
+    topp = pd.DataFrame(columns=['sample','coverage','context_converage','context'])    
+    #CG = []
     #start=t.time()
     if args.CG:
         con='CG'
-        Parallel(n_jobs=args.cores)(delayed(CGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
-    
+        CG=Parallel(n_jobs=args.cores)(delayed(CGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
         # merge MeH within sample
         for file in spbam_list:
             filename, file_extension = os.path.splitext(file)
@@ -1489,10 +1505,16 @@ if __name__ == "__main__":
         Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
         print("All done. ",len(bam_list)," bam files processed and merged for CG.")
     
+        for i in CG:
+            toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_converage':i[2],'context':i[3]},index=[0])
+            topp=topp.append(toout)
+        #topp.groupby(['context','sample']).agg({'coverage': 'sum', 'context_converage': 'sum'})
+        #print(topp)
+          
     if args.CHG:
         con='CHG'
-        Parallel(n_jobs=args.cores)(delayed(CHGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
-    
+        CG=Parallel(n_jobs=args.cores)(delayed(CHGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
+        
         # merge MeH within sample
         for file in spbam_list:
             filename, file_extension = os.path.splitext(file)
@@ -1579,10 +1601,16 @@ if __name__ == "__main__":
 
         Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
         print("All done. ",len(bam_list)," bam files processed and merged for CHG.")
-
+    
+        for i in CG:
+            toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_converage':i[2],'context':i[3]},index=[0])
+            topp=topp.append(toout)
+        #topp.groupby(['context','sample']).agg({'coverage': 'sum', 'context_converage': 'sum'})
+        
+        
     if args.CHH:
         con='CHH'
-        Parallel(n_jobs=args.cores)(delayed(CHHgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
+        CG=Parallel(n_jobs=args.cores)(delayed(CHHgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
     
         # merge MeH within sample
         for file in spbam_list:
@@ -1672,10 +1700,24 @@ if __name__ == "__main__":
         Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
         print("All done. ",len(bam_list)," bam files processed and merged for CHH.")
         
+        for i in CG:
+            toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_converage':i[2],'context':i[3]},index=[0])
+            topp=topp.append(toout)
+        print(topp)
+    print('before groupby',topp)
+    topp=topp.groupby(['context','sample']).agg({'coverage': 'sum', 'context_converage': 'sum'})
+    print('after groupby',topp) 
+    
     for filename in spbam_list:
         file = Folder + filename + '.bam'
         os.remove(file)
-        
     
-
+    end = time.time()
+    print('Completed in: %s sec'% (end - start))
+    
+    print(topp)
+    print(topp.shape[0])
+    for i in range(topp.shape[0]):
+        print('i = ',i)
+        print('Sample', topp.loc[i,0],' has coverage ',topp.loc[i,1],' for context ',topp.loc[i,2],' out of data coverage ', topp.loc[i,3])
 # FINAL
