@@ -1,8 +1,8 @@
 ##
 #---------------------------------------------------------------------
 # SERVER only input all files (.bam and .fa) output MeH matrix in .csv
-# May 17, 2021
-# FINAL github
+# June 12, 2021
+# FINAL github to modify for ML after imputation
 #---------------------------------------------------------------------
 
 import random
@@ -290,6 +290,9 @@ def MeHperwindow(pat,start,dis,chrom,D,w,ML,depth,optional,MeH=2,dist=1,strand='
     out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':round(score,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])    
     
     if optional:
+        if MeH!=3:
+            count=count.reshape(2**w)
+            count=np.concatenate((count[[0]],count))
         if w==3:
             opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[1],'p02':count[2],'p03':count[3],'p04':count[4],\
                         'p05':count[5],'p06':count[6],'p07':count[7],'p08':count[8],'MeH':round(score,5),'dis':dis,'ML':round(ML,3),'depth':depth,'strand':strand}, index=[0])     
@@ -1052,7 +1055,7 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             if (pileupcolumn.pos % 2000000 == 1):
                 print("CHG %s s %s w %s %s pos %s Result %s" % (datetime.datetime.now(),filename,w,chrom,pileupcolumn.pos,ResultPW.shape[0]))
         
-        if fastafile.fetch(chrom,pileupcolumn.pos,pileupcolumn.pos+1)=='C' and fastafile.fetch(chrom,pileupcolumn.pos+1,pileupcolumn.pos+2)!='G' and fastafile.fetch(chrom,pileupcolumn.pos+2,pileupcolumn.pos+3)!='G':        
+        if fastafile.fetch(chrom,pileupcolumn.pos,pileupcolumn.pos+1)=='C' and fastafile.fetch(chrom,pileupcolumn.pos+1,pileupcolumn.pos+2)!='G' and fastafile.fetch(chrom,pileupcolumn.pos+2,pileupcolumn.pos+3)=='G':        
             cov_context += 1
             temp = pd.DataFrame(columns=['Qname',pileupcolumn.pos])
             pileupcolumn.set_min_base_quality(0)
@@ -1427,17 +1430,26 @@ if __name__ == "__main__":
             print("sample = ",sample)
             if not sample == filename:
                 res_dir = Folder + con + '_' + str(sample) + '.csv'
-                toapp_dir = Folder + con + '_' +file + '.csv'
+                toapp_dir = Folder + con + '_' + file + '.csv'
                 if os.path.exists(res_dir):
                     Tomod = pd.read_csv(res_dir) 
                     Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Toappend=Toappend.drop(columns=['pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'MeH': 'mean'}).reset_index()
                     Tomod = Tomod.append(Toappend)
                     Tomod.to_csv(res_dir,index = False,header=True)
                     #os.remove(toapp_dir)
                 else:
                     Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Toappend=Toappend.drop(columns=['pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'MeH': 'mean'}).reset_index()
                     Toappend.to_csv(res_dir,index = False,header=True)
-                    #os.remove(toapp_dir)
+                    
+        # not into bins of 400bp
         if args.opt:
             for file in spbam_list:
                 filename, file_extension = os.path.splitext(file)
@@ -1451,35 +1463,90 @@ if __name__ == "__main__":
                         Toappend = pd.read_csv(toapp_dir)
                         Tomod = Tomod.append(Toappend)
                         Tomod.to_csv(res_dir,index = False,header=True)
-                        #os.remove(toapp_dir)
+                        os.remove(toapp_dir)
                     else:
                         Toappend = pd.read_csv(toapp_dir)
                         Toappend.to_csv(res_dir,index = False,header=True)
-                        #os.remove(toapp_dir)
+                        os.remove(toapp_dir)
+
         #os.chdir('../')
         #os.chdir(outputFolder)
         
-        # merge ML between samples
+        
+        # append ML within samples
         if args.mlv:
+            for file in spbam_list:
+                filename, file_extension = os.path.splitext(file)
+                sample = str.split(file,'_')[0]
+                res_dir = Folder + con + '_ML_' + str(sample) + '.csv'
+                toapp_dir = Folder + con + '_' + file + '.csv'
+                if os.path.exists(res_dir):
+                    Tomod = pd.read_csv(res_dir) 
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
+                    #Count=Count.drop_duplicates()
+                    #print(Count)
+                    Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
+                    conditions = [
+                        (Toappend['counts'] > 4),
+                        (Toappend['counts'] < 5) 
+                    ]
+                    # create a list of the values we want to assign for each condition
+                    values = [Toappend['ML'], np.nan]
+
+                    # create a new column and use np.select to assign values to it using our lists as arguments
+                    Toappend['ML'] = np.select(conditions, values)
+                    Toappend=Toappend.drop(columns=['counts','pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
+                    Tomod = Tomod.append(Toappend)
+                    Tomod.to_csv(res_dir,index = False,header=True)
+                    os.remove(toapp_dir)
+                else:
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
+                    Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
+                    #print(Toappend)
+                    conditions = [
+                        (Toappend['counts'] > 4),
+                        (Toappend['counts'] < 5) 
+                    ]
+                    # create a list of the values we want to assign for each condition
+                    values = [Toappend['ML'], np.nan]
+
+                    # create a new column and use np.select to assign values to it using our lists as arguments
+                    Toappend['ML'] = np.select(conditions, values)
+                    Toappend=Toappend.drop(columns=['counts','pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
+                    Toappend.to_csv(res_dir,index = False,header=True)
+                    os.remove(toapp_dir)
+        
+        # merge ML between samples
+        #if args.mlv:
             for sample in bam_list: 
-                tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
+                tomerge_dir = Folder +  con + '_ML_' + str(sample) + '.csv' 
                 res_dir = Folder +  con + '_ML_' + 'Results.csv'
                 if os.path.exists(res_dir):
-                    Result = pd.read_csv(res_dir)
+                    Tomod = pd.read_csv(res_dir) 
                     Tomerge = pd.read_csv(tomerge_dir)
-                    Tomerge = Tomerge.drop(columns=['dis','MeH','depth'])
-                    Tomerge.dropna(axis = 0, thresh=4, inplace = True)
+                    #Tomerge = Tomerge.drop(columns=['counts','pos','depth','dis'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    #Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
                     Tomerge = Tomerge.rename(columns={'ML': sample})
-                    Result = Result.merge(Tomerge, on=['chrom','pos','strand'])
-                    Result = Result.drop_duplicates() 
-                    Result.to_csv(Folder + con + '_ML_' +'Results.csv',index = False,header=True)
+                    Tomod=Tomod.merge(Tomerge, on=['chrom','bin','strand'])
+                    Tomod.to_csv(res_dir,index = False,header=True)
+                    os.remove(tomerge_dir)
                 else:
                     Result = pd.read_csv(tomerge_dir)
-                    Result = Result.drop(columns=['dis','MeH','depth'])
-                    Result.dropna(axis = 0, thresh=4, inplace = True)
                     Result = Result.rename(columns={'ML': sample})
-                    Result.to_csv(Folder + con + '_ML_' +'Results.csv',index = False,header=True)
-
+                    #Result = Result.drop(columns=['counts','pos','depth','dis'])
+                    #Result = Result.drop_duplicates() 
+                    Result.to_csv(res_dir,index = False,header=True)
+                    os.remove(tomerge_dir)
+                    
         # merge MeH between samples
         for sample in bam_list: 
             tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
@@ -1487,20 +1554,22 @@ if __name__ == "__main__":
             if os.path.exists(res_dir):
                 Result = pd.read_csv(res_dir)
                 Tomerge = pd.read_csv(tomerge_dir)
-                Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
+                #Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
                 Tomerge.dropna(axis = 0, thresh=4, inplace = True)
                 Tomerge = Tomerge.rename(columns={'MeH': sample})
-                Result = Result.merge(Tomerge, on=['chrom','pos','strand'])
-                Result = Result.drop_duplicates() 
+                Result = Result.merge(Tomerge, on=['chrom','bin','strand'])
+                Result.dropna(axis = 0, thresh=4, inplace = True) 
                 Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
                 os.remove(tomerge_dir)
             else:
                 Result = pd.read_csv(tomerge_dir)
-                Result = Result.drop(columns=['dis','ML','depth'])
-                Result.dropna(axis = 0, thresh=4, inplace = True)
+                Result.head()
+                #Result = Result.drop(columns=['dis','ML','depth'])
+                #Result.dropna(axis = 0, thresh=4, inplace = True)
                 Result = Result.rename(columns={'MeH': sample})
                 Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
                 os.remove(tomerge_dir)
+
 
         Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
         print("All done. ",len(bam_list)," bam files processed and merged for CG.")
@@ -1515,24 +1584,32 @@ if __name__ == "__main__":
         con='CHG'
         CG=Parallel(n_jobs=args.cores)(delayed(CHGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
         
-        # merge MeH within sample
         for file in spbam_list:
             filename, file_extension = os.path.splitext(file)
             sample = str.split(file,'_')[0]
             print("sample = ",sample)
             if not sample == filename:
                 res_dir = Folder + con + '_' + str(sample) + '.csv'
-                toapp_dir = Folder + con + '_' +file + '.csv'
+                toapp_dir = Folder + con + '_' + file + '.csv'
                 if os.path.exists(res_dir):
                     Tomod = pd.read_csv(res_dir) 
                     Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Toappend=Toappend.drop(columns=['pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'MeH': 'mean'}).reset_index()
                     Tomod = Tomod.append(Toappend)
                     Tomod.to_csv(res_dir,index = False,header=True)
-                    os.remove(toapp_dir)
+                    #os.remove(toapp_dir)
                 else:
                     Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Toappend=Toappend.drop(columns=['pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'MeH': 'mean'}).reset_index()
                     Toappend.to_csv(res_dir,index = False,header=True)
-                    os.remove(toapp_dir)
+                    
+        # not into bins of 400bp
         if args.opt:
             for file in spbam_list:
                 filename, file_extension = os.path.splitext(file)
@@ -1551,31 +1628,85 @@ if __name__ == "__main__":
                         Toappend = pd.read_csv(toapp_dir)
                         Toappend.to_csv(res_dir,index = False,header=True)
                         os.remove(toapp_dir)
+
         #os.chdir('../')
         #os.chdir(outputFolder)
         
-        # merge ML between samples
+        
+        # append ML within samples
         if args.mlv:
+            for file in spbam_list:
+                filename, file_extension = os.path.splitext(file)
+                sample = str.split(file,'_')[0]
+                res_dir = Folder + con + '_ML_' + str(sample) + '.csv'
+                toapp_dir = Folder + con + '_' + file + '.csv'
+                if os.path.exists(res_dir):
+                    Tomod = pd.read_csv(res_dir) 
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
+                    #Count=Count.drop_duplicates()
+                    #print(Count)
+                    Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
+                    conditions = [
+                        (Toappend['counts'] > 4),
+                        (Toappend['counts'] < 5) 
+                    ]
+                    # create a list of the values we want to assign for each condition
+                    values = [Toappend['ML'], np.nan]
+
+                    # create a new column and use np.select to assign values to it using our lists as arguments
+                    Toappend['ML'] = np.select(conditions, values)
+                    Toappend=Toappend.drop(columns=['counts','pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
+                    Tomod = Tomod.append(Toappend)
+                    Tomod.to_csv(res_dir,index = False,header=True)
+                    os.remove(toapp_dir)
+                else:
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
+                    Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
+                    #print(Toappend)
+                    conditions = [
+                        (Toappend['counts'] > 4),
+                        (Toappend['counts'] < 5) 
+                    ]
+                    # create a list of the values we want to assign for each condition
+                    values = [Toappend['ML'], np.nan]
+
+                    # create a new column and use np.select to assign values to it using our lists as arguments
+                    Toappend['ML'] = np.select(conditions, values)
+                    Toappend=Toappend.drop(columns=['counts','pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
+                    Toappend.to_csv(res_dir,index = False,header=True)
+                    os.remove(toapp_dir)
+        
+        # merge ML between samples
+        #if args.mlv:
             for sample in bam_list: 
-                tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
+                tomerge_dir = Folder +  con + '_ML_' + str(sample) + '.csv' 
                 res_dir = Folder +  con + '_ML_' + 'Results.csv'
                 if os.path.exists(res_dir):
-                    Result = pd.read_csv(res_dir)
+                    Tomod = pd.read_csv(res_dir) 
                     Tomerge = pd.read_csv(tomerge_dir)
-                    Tomerge = Tomerge.drop(columns=['dis','MeH','depth'])
-                    Tomerge.dropna(axis = 0, thresh=4, inplace = True)
+                    #Tomerge = Tomerge.drop(columns=['counts','pos','depth','dis'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    #Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
                     Tomerge = Tomerge.rename(columns={'ML': sample})
-                    Result = Result.merge(Tomerge, on=['chrom','pos','strand'])
-                    Result = Result.drop_duplicates() 
-                    Result.to_csv(Folder + con + '_ML_' +'Results.csv',index = False,header=True)
-                    
+                    Tomod=Tomod.merge(Tomerge, on=['chrom','bin','strand'])
+                    Tomod.to_csv(res_dir,index = False,header=True)
+                    os.remove(tomerge_dir)
                 else:
                     Result = pd.read_csv(tomerge_dir)
-                    Result = Result.drop(columns=['dis','MeH','depth'])
-                    Result.dropna(axis = 0, thresh=4, inplace = True)
                     Result = Result.rename(columns={'ML': sample})
-                    Result.to_csv(Folder + con + '_ML_' +'Results.csv',index = False,header=True)
-
+                    #Result = Result.drop(columns=['counts','pos','depth','dis'])
+                    #Result = Result.drop_duplicates() 
+                    Result.to_csv(res_dir,index = False,header=True)
+                    os.remove(tomerge_dir)
+                    
         # merge MeH between samples
         for sample in bam_list: 
             tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
@@ -1583,21 +1714,22 @@ if __name__ == "__main__":
             if os.path.exists(res_dir):
                 Result = pd.read_csv(res_dir)
                 Tomerge = pd.read_csv(tomerge_dir)
-                
-                Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
+                #Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
                 Tomerge.dropna(axis = 0, thresh=4, inplace = True)
                 Tomerge = Tomerge.rename(columns={'MeH': sample})
-                Result = Result.merge(Tomerge, on=['chrom','pos','strand'])
-                Result = Result.drop_duplicates() 
+                Result = Result.merge(Tomerge, on=['chrom','bin','strand'])
+                Result.dropna(axis = 0, thresh=4, inplace = True) 
                 Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
                 os.remove(tomerge_dir)
             else:
                 Result = pd.read_csv(tomerge_dir)
-                Result = Result.drop(columns=['dis','ML','depth'])
-                Result.dropna(axis = 0, thresh=4, inplace = True)
+                Result.head()
+                #Result = Result.drop(columns=['dis','ML','depth'])
+                #Result.dropna(axis = 0, thresh=4, inplace = True)
                 Result = Result.rename(columns={'MeH': sample})
                 Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
                 os.remove(tomerge_dir)
+
 
         Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
         print("All done. ",len(bam_list)," bam files processed and merged for CHG.")
@@ -1619,18 +1751,26 @@ if __name__ == "__main__":
             print("sample = ",sample)
             if not sample == filename:
                 res_dir = Folder + con + '_' + str(sample) + '.csv'
-                toapp_dir = Folder + con + '_' +file + '.csv'
+                toapp_dir = Folder + con + '_' + file + '.csv'
                 if os.path.exists(res_dir):
                     Tomod = pd.read_csv(res_dir) 
                     Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Toappend=Toappend.drop(columns=['pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'MeH': 'mean'}).reset_index()
                     Tomod = Tomod.append(Toappend)
                     Tomod.to_csv(res_dir,index = False,header=True)
                     #os.remove(toapp_dir)
                 else:
                     Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Toappend=Toappend.drop(columns=['pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'MeH': 'mean'}).reset_index()
                     Toappend.to_csv(res_dir,index = False,header=True)
-                    #os.remove(toapp_dir)
-        
+                    
+        # not into bins of 400bp
         if args.opt:
             for file in spbam_list:
                 filename, file_extension = os.path.splitext(file)
@@ -1644,37 +1784,90 @@ if __name__ == "__main__":
                         Toappend = pd.read_csv(toapp_dir)
                         Tomod = Tomod.append(Toappend)
                         Tomod.to_csv(res_dir,index = False,header=True)
-                        #os.remove(toapp_dir)
+                        os.remove(toapp_dir)
                     else:
                         Toappend = pd.read_csv(toapp_dir)
                         Toappend.to_csv(res_dir,index = False,header=True)
-                        #os.remove(toapp_dir)
+                        os.remove(toapp_dir)
 
         #os.chdir('../')
         #os.chdir(outputFolder)
         
-        # merge ML between samples
+        
+        # append ML within samples
         if args.mlv:
+            for file in spbam_list:
+                filename, file_extension = os.path.splitext(file)
+                sample = str.split(file,'_')[0]
+                res_dir = Folder + con + '_ML_' + str(sample) + '.csv'
+                toapp_dir = Folder + con + '_' + file + '.csv'
+                if os.path.exists(res_dir):
+                    Tomod = pd.read_csv(res_dir) 
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
+                    #Count=Count.drop_duplicates()
+                    #print(Count)
+                    Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
+                    conditions = [
+                        (Toappend['counts'] > 4),
+                        (Toappend['counts'] < 5) 
+                    ]
+                    # create a list of the values we want to assign for each condition
+                    values = [Toappend['ML'], np.nan]
+
+                    # create a new column and use np.select to assign values to it using our lists as arguments
+                    Toappend['ML'] = np.select(conditions, values)
+                    Toappend=Toappend.drop(columns=['counts','pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
+                    Tomod = Tomod.append(Toappend)
+                    Tomod.to_csv(res_dir,index = False,header=True)
+                    os.remove(toapp_dir)
+                else:
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
+                    Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
+                    #print(Toappend)
+                    conditions = [
+                        (Toappend['counts'] > 4),
+                        (Toappend['counts'] < 5) 
+                    ]
+                    # create a list of the values we want to assign for each condition
+                    values = [Toappend['ML'], np.nan]
+
+                    # create a new column and use np.select to assign values to it using our lists as arguments
+                    Toappend['ML'] = np.select(conditions, values)
+                    Toappend=Toappend.drop(columns=['counts','pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
+                    Toappend.to_csv(res_dir,index = False,header=True)
+                    os.remove(toapp_dir)
+        
+        # merge ML between samples
+        #if args.mlv:
             for sample in bam_list: 
-                tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
+                tomerge_dir = Folder +  con + '_ML_' + str(sample) + '.csv' 
                 res_dir = Folder +  con + '_ML_' + 'Results.csv'
                 if os.path.exists(res_dir):
-                    Result = pd.read_csv(res_dir)
+                    Tomod = pd.read_csv(res_dir) 
                     Tomerge = pd.read_csv(tomerge_dir)
-                    Tomerge = Tomerge.drop(columns=['dis','MeH','depth'])
-                    Tomerge.dropna(axis = 0, thresh=4, inplace = True)
+                    #Tomerge = Tomerge.drop(columns=['counts','pos','depth','dis'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    #Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
                     Tomerge = Tomerge.rename(columns={'ML': sample})
-                    Result = Result.merge(Tomerge, on=['chrom','pos','strand'])
-                    Result = Result.drop_duplicates() 
-                    Result.to_csv(Folder + con + '_ML_' +'Results.csv',index = False,header=True)
-                    
+                    Tomod=Tomod.merge(Tomerge, on=['chrom','bin','strand'])
+                    Tomod.to_csv(res_dir,index = False,header=True)
+                    os.remove(tomerge_dir)
                 else:
                     Result = pd.read_csv(tomerge_dir)
-                    Result = Result.drop(columns=['dis','MeH','depth'])
-                    Result.dropna(axis = 0, thresh=4, inplace = True)
                     Result = Result.rename(columns={'ML': sample})
-                    Result.to_csv(Folder + con + '_ML_' +'Results.csv',index = False,header=True)
-
+                    #Result = Result.drop(columns=['counts','pos','depth','dis'])
+                    #Result = Result.drop_duplicates() 
+                    Result.to_csv(res_dir,index = False,header=True)
+                    os.remove(tomerge_dir)
+                    
         # merge MeH between samples
         for sample in bam_list: 
             tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
@@ -1682,20 +1875,29 @@ if __name__ == "__main__":
             if os.path.exists(res_dir):
                 Result = pd.read_csv(res_dir)
                 Tomerge = pd.read_csv(tomerge_dir)
-                Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
+                #Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
                 Tomerge.dropna(axis = 0, thresh=4, inplace = True)
                 Tomerge = Tomerge.rename(columns={'MeH': sample})
-                Result = Result.merge(Tomerge, on=['chrom','pos','strand'])
-                Result = Result.drop_duplicates() 
+                Result = Result.merge(Tomerge, on=['chrom','bin','strand'])
+                Result.dropna(axis = 0, thresh=4, inplace = True) 
                 Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
                 os.remove(tomerge_dir)
             else:
                 Result = pd.read_csv(tomerge_dir)
-                Result = Result.drop(columns=['dis','ML','depth'])
-                Result.dropna(axis = 0, thresh=4, inplace = True)
+                Result.head()
+                #Result = Result.drop(columns=['dis','ML','depth'])
+                #Result.dropna(axis = 0, thresh=4, inplace = True)
                 Result = Result.rename(columns={'MeH': sample})
                 Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
                 os.remove(tomerge_dir)
+
+        Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
+        print("All done. ",len(bam_list)," bam files processed and merged for CG.")
+    
+        for i in CG:
+            toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_converage':i[2],'context':i[3]},index=[0])
+            topp=topp.append(toout)
+        #topp.groupby(['context','sample']).agg({'coverage': 'sum', 'context_converage': 'sum'})
 
         Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
         print("All done. ",len(bam_list)," bam files processed and merged for CHH.")
@@ -1703,9 +1905,8 @@ if __name__ == "__main__":
         for i in CG:
             toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_converage':i[2],'context':i[3]},index=[0])
             topp=topp.append(toout)
-        print(topp)
-    print('before groupby',topp)
-    topp=topp.groupby(['context','sample']).agg({'coverage': 'sum', 'context_converage': 'sum'})
+
+    topp=topp.groupby(['context','sample']).agg({'coverage': 'sum', 'context_converage': 'sum'}).reset_index()
     print('after groupby',topp) 
     
     for filename in spbam_list:
@@ -1715,9 +1916,9 @@ if __name__ == "__main__":
     end = time.time()
     print('Completed in: %s sec'% (end - start))
     
-    print(topp)
-    print(topp.shape[0])
     for i in range(topp.shape[0]):
         print('i = ',i)
-        print('Sample', topp.loc[i,0],' has coverage ',topp.loc[i,1],' for context ',topp.loc[i,2],' out of data coverage ', topp.loc[i,3])
-# FINAL
+        print('Sample', topp.iloc[i,0],' has coverage ',topp.iloc[i,1],' for context ',topp.iloc[i,2],' out of data coverage ', topp.iloc[i,3])
+# FINAL FINALi
+# /MH/test
+# python3 testfull.py -w 4 -c 30 --CG --CHG --opt --mlv
