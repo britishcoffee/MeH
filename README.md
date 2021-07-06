@@ -56,7 +56,7 @@ install.packages("foreach")
 library(foreach)
 
 MeH.t = function(vector,conditions,compare) {
-  ind1<-which(conditions == compare[1])+3 # +2 for chrom,bin and strand columns
+  ind1<-which(conditions == compare[1])+3 # +3 for chrom,bin and strand columns
   ind2<-which(conditions == compare[2])+3
   #l=length(vector)
   vector=as.data.frame(vector)
@@ -73,18 +73,17 @@ MeH.t = function(vector,conditions,compare) {
 
 
 findgene = function(position) {
-  chr=unlist(position[1])
+  chr=as.character(position[1])
   #message(chr)
   BP=as.numeric(position[2])
   #message(BP)
-  St=unlist(position[3])
+  St=as.character(position[3])
+  Gene=geneloc$gene[which((geneloc$TSS<=BP)*(geneloc$TES>=BP)*(as.character(geneloc$chrom)==chr)*(as.character(geneloc$strand)==as.character(St))==1)][1]
   if (St=='f') {
-    Gene=geneloc$gene[which((geneloc$TSS<=BP)*(geneloc$TES>=BP)*(geneloc$chrom==chr)==1)][1]
-    promoter=geneloc$gene[which((geneloc$TSS-1000<=BP)*(geneloc$TSS+1000>=BP)*(geneloc$chrom==chr)==1)][1]
+    promoter=geneloc$gene[which((geneloc$TSS-1000<=BP)*(geneloc$TSS+1000>=BP)*(as.character(geneloc$chrom)==chr)*(geneloc$strand=="f")==1)][1]
   }
   if (St=='r') {
-    Gene=geneloc$gene[which((geneloc$TSS<=BP)*(geneloc$TES>=BP)*(geneloc$chrom==chr)==1)][1]
-    promoter=geneloc$gene[which((geneloc$TES-1000<=BP)*(geneloc$TES+1000>=BP)*(geneloc$chrom==chr)==1)][1]
+    promoter=geneloc$gene[which((geneloc$TES-1000<=BP)*(geneloc$TES+1000>=BP)*(as.character(geneloc$chrom)==chr)*(geneloc$strand=="r")==1)][1]
   }
   return(list(chrom=chr,bin=BP,Gene=Gene,Promoter=promoter,strand=St))
 }
@@ -93,82 +92,45 @@ findgene = function(position) {
 #### Load files for analysis by first setting the work directory to where your files are located
 ```R
 setwd("~/MeHdata")
-Dest <- read.table('CG_Results.csv',header=TRUE,sep=",")
-Dest <- read.table('CHG_Results.csv',header=TRUE,sep=",")
-Dest <- read.table('CHH_Results.csv',header=TRUE,sep=",")
+CG <- read.table('CG_Results.csv',header=TRUE,sep=",")
+CHG <- read.table('CHG_Results.csv',header=TRUE,sep=",")
+CHH <- read.table('CHH_Results.csv',header=TRUE,sep=",")
 ```
 
 <img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image1.png?raw=true" width="600">
 
-#### Remove rows with no data
+#### Remove rows with missing data
 ```R
-Dest=Dest[which(apply(Dest,1,function(x) sum(is.na(x)))==0),]
+CG=CG[which(apply(CG,1,function(x) sum(is.na(x)))==0),]
 ```
 
 <img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image2.png?raw=true" width="600">
-
-#### Construct bins of 400bp (default, can be changed to any even number) and add a column of bin position to data
-```R
-bin_size=400
-Dest$bin<-((Dest$pos-1) %/% bin_size)*bin_size+(bin_size/2)
-```
-
-<img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image3.png?raw=true" width="600">
-
-#### Obtain names of samples (will be identical to names of the bam files provided if unchanged)
-```R
-samples=colnames(Dest)[which(!colnames(Dest) %in% c("chrom","pos","strand","bin"))]
-```
-
-<img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image4.png?raw=true" width="600">
-
-
-#### Obtain results (average methylation heterogeneity for the bins) by taking averages of methylation heterogeneity for windows within the same bins
-```R
-# assign("[samplename]",data.frame(Dest %>% group_by(chrom,bin,strand) %>% summarise(mean(samplename))))
-assign("C0031test1234",data.frame(Dest %>% group_by(chrom,bin,strand) %>% summarise(mean(C0031test1234))))
-assign("C0033test1234",data.frame(Dest %>% group_by(chrom,bin,strand) %>% summarise(mean(C0033test1234))))
-assign("C0035test1234",data.frame(Dest %>% group_by(chrom,bin,strand) %>% summarise(mean(C0035test1234))))
-assign("C0037test1234",data.frame(Dest %>% group_by(chrom,bin,strand) %>% summarise(mean(C0037test1234))))
-```
-
-#### Merging results from different samples into a matrix called "new"
-```R
-new=c()
-for (s in samples) {
-    data=get(s)
-    colnames(data)[4]=s
-    if (!is.null(new)) new = merge(new,data,by=c("chrom","bin","strand"))
-    else new=data
-}
-```
-
-<img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image5.png?raw=true" width="600">
 
 #### Define conditions of all samples; i.e., A and B for 2 conditions, each with two replicates, samples 1 and 2 are replicates of A and samples 3 and 4 are replicates for B. This is for comparisons to be carried out later on
 
 ```R
 conditions <- c("A","A","B","B")
 ```
-#### Calculate t-statistics and p-values for all bins between user specified conditions
+
+#### Calculate t-statistics and p-values for all bins between user specified conditions; An example is for A vs B here
 ```R
 library(doParallel)
 registerDoParallel(cores=4)
 # Compare condition B with A
-Comp1<-data.frame(foreach(i = 1:dim(new)[1],.combine = rbind) %dopar% 
-                      MeH.t(new[i,],conditions=conditions,c("A","B")))
+Comp1<-data.frame(foreach(i = 1:dim(CG)[1],.combine = rbind) %dopar% 
+                      MeH.t(CG[i,],conditions=conditions,c("A","B")))
 ```
-#### Select differential heterogeneous regions based on user specified conditions; i.e., p-value of 0.05 and delta of 1 (positive or negative)
+#### Select differential heterogeneous regions based on user specified conditions; i.e., p-value of 0.05 and delta of 1.4 (positive or negative)
 ```R
-Comp1$DHR <- (Comp1$pvalue<0.05)*(abs(Comp1$delta)>1)
+Comp1$DHR <- (Comp1$pvalue<0.05)*(abs(Comp1$delta)>1.4)
 ```
 
 <img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image6.png?raw=true" width="450">
 
-#### DHG analysis if bed file is given as .txt with each row representing a gene and consists of gene name, chromosome number, TSS, TES and strand as 'f' (forward) or 'r' (reverse)
+#### DHG analysis if bed file is given as .txt with each row representing a gene and consists of gene name, chromosome, TSS, TES and strand as 'f' (forward) or 'r' (reverse)
 
 ```R
-geneloc<-read.table('../genelist.txt',header=TRUE)
+geneloc<-read.table('genelist.txt',header=TRUE)
 ```
 <img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image7.png?raw=true" width="300">
 
