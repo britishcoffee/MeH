@@ -1367,7 +1367,7 @@ def split_bam(samplenames,Folder):
     ext = '.bam'
     x = 0
     fileout = Folder+fileout_base+"_" + str(x)+ext # filename_x.bam
-    print("fileout ",fileout)
+    print("fileout",fileout)
     header = samfile.header
         
     outfile = pysam.Samfile(fileout, "wb", header = header)
@@ -1385,7 +1385,7 @@ def split_bam(samplenames,Folder):
             outfile.close()
             pysam.index(fileout)
             fileout = Folder+fileout_base + "_" + str(x)+ext
-            print("fileout ",fileout)
+            print("fileout",fileout)
             outfile = pysam.Samfile(fileout, "wb",header = header)
             
     outfile.close()
@@ -1450,7 +1450,7 @@ if __name__ == "__main__":
             spbam_list.append(filename)
     #print(spbam_list)
     
-    topp = pd.DataFrame(columns=['sample','coverage','context_converage','context'])    
+    topp = pd.DataFrame(columns=['sample','coverage','context_coverage','context'])    
     #CG = []
     #start=t.time()
     if args.CG:
@@ -1460,7 +1460,7 @@ if __name__ == "__main__":
         for file in spbam_list:
             filename, file_extension = os.path.splitext(file)
             sample = str.split(file,'_')[0]
-            print("sample = ",sample)
+            print("Merging within sample",sample,"...")
             if not sample == filename:
                 res_dir = Folder + con + '_' + str(sample) + '.csv'
                 toapp_dir = Folder + con + '_' + file + '.csv'
@@ -1487,7 +1487,7 @@ if __name__ == "__main__":
             for file in spbam_list:
                 filename, file_extension = os.path.splitext(file)
                 sample = str.split(file,'_')[0]
-                print("sample = ",sample)
+                #print("sample = ",sample)
                 if not sample == filename:
                     res_dir = Folder + con + '_opt_' + str(sample) + '.csv'
                     toapp_dir = Folder + con + '_opt_' +file + '.csv'
@@ -1604,12 +1604,12 @@ if __name__ == "__main__":
 
 
         Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
-        print("All done. ",len(bam_list)," bam files processed and merged for CG.")
+        print("All done.",len(bam_list),"bam files processed and merged for CG.")
     
         for i in CG:
-            toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_converage':i[2],'context':i[3]},index=[0])
+            toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_coverage':i[2],'context':i[3]},index=[0])
             topp=topp.append(toout)
-        #topp.groupby(['context','sample']).agg({'coverage': 'sum', 'context_converage': 'sum'})
+        #topp.groupby(['context','sample']).agg({'coverage': 'sum', 'context_coverage': 'sum'})
         #print(topp)
           
     if args.CHG:
@@ -1619,7 +1619,7 @@ if __name__ == "__main__":
         for file in spbam_list:
             filename, file_extension = os.path.splitext(file)
             sample = str.split(file,'_')[0]
-            print("sample = ",sample)
+            print("Merging within sample",sample,"...")
             if not sample == filename:
                 res_dir = Folder + con + '_' + str(sample) + '.csv'
                 toapp_dir = Folder + con + '_' + file + '.csv'
@@ -1646,7 +1646,7 @@ if __name__ == "__main__":
             for file in spbam_list:
                 filename, file_extension = os.path.splitext(file)
                 sample = str.split(file,'_')[0]
-                print("sample = ",sample)
+                #print("sample = ",sample)
                 if not sample == filename:
                     res_dir = Folder + con + '_opt_' + str(sample) + '.csv'
                     toapp_dir = Folder + con + '_opt_' +file + '.csv'
@@ -1762,12 +1762,12 @@ if __name__ == "__main__":
 
 
         Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
-        print("All done. ",len(bam_list)," bam files processed and merged for CHG.")
+        print("All done.",len(bam_list),"bam files processed and merged for CHG.")
     
         for i in CG:
-            toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_converage':i[2],'context':i[3]},index=[0])
+            toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_coverage':i[2],'context':i[3]},index=[0])
             topp=topp.append(toout)
-        #topp.groupby(['context','sample']).agg({'coverage': 'sum', 'context_converage': 'sum'})
+        #topp.groupby(['context','sample']).agg({'coverage': 'sum', 'context_coverage': 'sum'})
         
     if args.CHH:
         con='CHH'
@@ -1777,7 +1777,7 @@ if __name__ == "__main__":
         for file in spbam_list:
             filename, file_extension = os.path.splitext(file)
             sample = str.split(file,'_')[0]
-            print("sample = ",sample)
+            print("Merging within sample",sample,"...")
             if not sample == filename:
                 res_dir = Folder + con + '_' + str(sample) + '.csv'
                 toapp_dir = Folder + con + '_' + file + '.csv'
@@ -1919,22 +1919,14 @@ if __name__ == "__main__":
                 os.remove(tomerge_dir)
 
         Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
-        print("All done. ",len(bam_list)," bam files processed and merged for CG.")
+        print("All done.",len(bam_list),"bam files processed and merged for CHH.")
     
         for i in CG:
-            toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_converage':i[2],'context':i[3]},index=[0])
-            topp=topp.append(toout)
-        #topp.groupby(['context','sample']).agg({'coverage': 'sum', 'context_converage': 'sum'})
-
-        Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
-        print("All done. ",len(bam_list)," bam files processed and merged for CHH.")
-        
-        for i in CG:
-            toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_converage':i[2],'context':i[3]},index=[0])
+            toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_coverage':i[2],'context':i[3]},index=[0])
             topp=topp.append(toout)
 
-    topp=topp.groupby(['context','sample']).agg({'context_coverage': 'sum', 'converage': 'sum'}).reset_index()
-    print('after groupby',topp) 
+    topp=topp.groupby(['context','sample']).agg({'context_coverage': 'sum', 'coverage': 'sum'}).reset_index()
+    #print('after groupby',topp) 
     
     for filename in spbam_list:
         file = Folder + filename + '.bam'
@@ -1944,7 +1936,7 @@ if __name__ == "__main__":
     print('Completed in: %s sec'% (end - start))
     
     for i in range(topp.shape[0]):
-        print('i = ',i)
+        #print('i = ',i)
         print('Sample', topp.iloc[i,1],' has coverage ',topp.iloc[i,2],' for context ',topp.iloc[i,0],' out of data coverage ', topp.iloc[i,3])
 # FINAL FINAL
 # /MH/test
