@@ -1,7 +1,7 @@
 ##
 #---------------------------------------------------------------------
 # SERVER only input all files (.bam and .fa) output MeH matrix in .csv
-# June 12, 2021
+# July 6, 2021
 # FINAL github to modify for ML after imputation
 #---------------------------------------------------------------------
 
@@ -621,7 +621,7 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                             if optional:
                                 Resultopt.to_csv(r"MeHdata/CG_opt_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
-                                print("Checkpoint CG. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
+                                print("Checkpoint CG. For file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
 
             aggreC = aggreC.drop(meth.columns[0:w],axis=1)
             aggreC.dropna(axis = 0, thresh=2, inplace = True)
@@ -684,7 +684,7 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                             if optional:
                                 Resultopt.to_csv(r"MeHdata/CG_opt_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
-                                print("Checkpoint CG. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
+                                print("Checkpoint CG. For file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
 
             aggreR = aggreR.drop(meth.columns[0:w],axis=1)
             aggreR.dropna(axis = 0, thresh=2, inplace = True)
@@ -695,7 +695,7 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             Resultopt.to_csv(r"MeHdata/CG_opt_%s.csv"%(filename),index = False, header=True)
             
     return sample, coverage, cov_context, 'CG'        
-    print("Done. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
+    print("Done CG for file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
             
     #samfile.close()  
     
@@ -957,7 +957,7 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                                 Resultopt.to_csv(r"MeHdata/CHH_opt_%s.csv"%(filename),index = False, header=True)
                             
                             if not silence: 
-                                print("Checkpoint CHH. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
+                                print("Checkpoint CHH. For file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
 
             aggreC = aggreC.drop(meth.columns[0:w],axis=1)
             aggreC.dropna(axis = 0, thresh=2, inplace = True)
@@ -1018,7 +1018,7 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                             if optional:
                                 Resultopt.to_csv(r"MeHdata/CHH_opt_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
-                                print("Checkpoint CHH. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
+                                print("Checkpoint CHH. For file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
 
             aggreR = aggreR.drop(meth.columns[0:w],axis=1)
             aggreR.dropna(axis = 0, thresh=2, inplace = True)
@@ -1030,7 +1030,7 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
         if optional:
             Resultopt.to_csv(r"MeHdata/CHH_opt_%s.csv"%(filename),index = False, header=True)
     return sample, coverage, cov_context, 'CHH'                        
-    print("Done CHH. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
+    print("Done CHH for file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
             
 def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     filename, file_extension = os.path.splitext(bamfile)
@@ -1283,7 +1283,7 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                             if optional:
                                 Resultopt.to_csv(r"MeHdata/CHG_opt_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
-                                print("Checkpoint CHG. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
+                                print("Checkpoint CHG. For file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
 
             aggreC = aggreC.drop(meth.columns[0:w],axis=1)
             aggreC.dropna(axis = 0, thresh=2, inplace = True)
@@ -1342,7 +1342,7 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                             if optional:
                                 Resultopt.to_csv(r"MeHdata/CHG_opt_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
-                                print("Checkpoint CHG. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
+                                print("Checkpoint CHG. For file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
 
             aggreR = aggreR.drop(meth.columns[0:w],axis=1)
             aggreR.dropna(axis = 0, thresh=2, inplace = True) 
@@ -1353,7 +1353,7 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             Resultopt.to_csv(r"MeHdata/CHG_opt_%s.csv"%(filename),index = False, header=True)
                             
     return sample, coverage, cov_context, 'CHG'
-    print("Done CHG. For sample %s %s: %s results obtained up to position %s." % (filename,chrom,ResultPW.shape[0],pileupcolumn.pos))
+    print("Done CHG for file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
             
         
 def split_bam(samplenames,Folder): 
@@ -1930,7 +1930,10 @@ if __name__ == "__main__":
     
     for filename in spbam_list:
         file = Folder + filename + '.bam'
+        fileind = Folder + filename + '.bam.bai'
         os.remove(file)
+        os.remove(fileind)
+        
     
     end = time.time()
     print('Completed in: %s sec'% (end - start))
