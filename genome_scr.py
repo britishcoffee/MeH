@@ -2,7 +2,7 @@
 #---------------------------------------------------------------------
 # SERVER only input all files (.bam and .fa) output MeH matrix in .csv
 # July 6, 2021
-# FINAL github to modify for ML after imputation
+# FINAL github
 #---------------------------------------------------------------------
 
 import random
@@ -1377,8 +1377,8 @@ def split_bam(samplenames,Folder):
         outfile.write(reads)
         statinfo_out = os.stat(fileout)
         outfile_Size = statinfo_out.st_size
-        if(outfile_Size >=834182 and sum_Outfile_Size <= bamsize):
-        #if(outfile_Size >=337374182 and sum_Outfile_Size <= bamsize):
+        #if(outfile_Size >=834182 and sum_Outfile_Size <= bamsize):
+        if(outfile_Size >=337374182 and sum_Outfile_Size <= bamsize):
             sum_Outfile_Size = sum_Outfile_Size + outfile_Size
             x = x + 1
             spbam_list.append(fileout_base + "_" + str(x)+ext)
@@ -1940,7 +1940,7 @@ if __name__ == "__main__":
     
     for i in range(topp.shape[0]):
         #print('i = ',i)
-        print('Sample', topp.iloc[i,1],' has coverage ',topp.iloc[i,2],' for context ',topp.iloc[i,0],' out of data coverage ', topp.iloc[i,3])
+        print('Sample', topp.iloc[i,1],'has coverage',topp.iloc[i,2],'for context',topp.iloc[i,0],'out of data coverage', topp.iloc[i,3])
 # FINAL FINAL
 # /MH/test
 # python3 testfull.py -w 4 -c 4 --CG --CHG --opt --mlv
