@@ -99,13 +99,6 @@ CHH <- read.table('CHH_Results.csv',header=TRUE,sep=",")
 
 <img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image1.png?raw=true" width="600">
 
-#### Remove rows with missing data
-```R
-CG=CG[which(apply(CG,1,function(x) sum(is.na(x)))==0),]
-```
-
-<img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image2.png?raw=true" width="600">
-
 #### Define conditions of all samples; i.e., A and B for 2 conditions, each with two replicates, samples 1 and 2 are replicates of A and samples 3 and 4 are replicates for B. This is for comparisons to be carried out later on
 
 ```R
@@ -119,10 +112,11 @@ registerDoParallel(cores=4)
 # Compare condition B with A
 Comp1<-data.frame(foreach(i = 1:dim(CG)[1],.combine = rbind) %dopar% 
                       MeH.t(CG[i,],conditions=conditions,c("A","B")))
+Comp1$padj=p.adjust(Comp1$pvalue)
 ```
 #### Select differential heterogeneous regions based on user specified conditions; i.e., p-value of 0.05 and delta of 1.4 (positive or negative)
 ```R
-Comp1$DHR <- (Comp1$pvalue<0.05)*(abs(Comp1$delta)>1.4)
+Comp1$DHR <- (Comp1$padj<0.05)*(Comp1$pvalue<0.05)*(abs(Comp1$delta)>1.4)
 ```
 
 <img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image6.png?raw=true" width="450">
@@ -131,6 +125,9 @@ Comp1$DHR <- (Comp1$pvalue<0.05)*(abs(Comp1$delta)>1.4)
 
 ```R
 geneloc<-read.table('genelist.txt',header=TRUE)
+colnames(geneloc)<-c("gene","chrom","strand","TSS","TES")
+geneloc$strand[as.character(geneloc$strand)=="+"]<-"f"
+geneloc$strand[as.character(geneloc$strand)=="-"]<-"r"
 ```
 <img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image7.png?raw=true" width="300">
 
