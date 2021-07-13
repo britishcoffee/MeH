@@ -23,6 +23,20 @@ from collections import Counter, defaultdict, OrderedDict
 
 #---------------------------------------
 
+    
+def open_log(fname):
+    open_log.logfile = open(fname, 'w', 1)
+    
+
+def logm(message):
+    log_message = "[%s] %s\n" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), message)
+    print(log_message),
+    open_log.logfile.write(log_message)
+
+def close_log():
+    open_log.logfile.close()
+    
+    
 # Count # of windows with enough reads for complete/impute
 def coverage(methbin,complete,w):
     count=0
@@ -367,6 +381,9 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     
     # initialise data frame for output 
     ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','ML','depth','strand'])
+    if melv:
+        ResML = pd.DataFrame(columns=['chrom','pos','ML','depth','strand'])
+    
     
     # if user wants to output compositions of methylation patterns at every eligible window, initialise data frame
     if optional:
@@ -427,6 +444,17 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                     d = {'Qname': [pileupread.alignment.query_name], pileupcolumn.pos: [pileupread.alignment.query_sequence[pileupread.query_position]]}
                     df2 = pd.DataFrame(data=d)
                     temp=temp.append(df2, ignore_index=True)
+            if melv:
+                temp2 = temp.replace(['C'],1)
+                temp2 = temp2.replace(['G','A','T'],0)
+                temp2 = temp2.drop('Qname',axis=1)
+                MC=(temp2==1).sum(axis=0).to_numpy()
+                UC=(temp2==0).sum(axis=0).to_numpy()
+                depth=MC+UC
+                if depth>3:
+                    toappend=pd.DataFrame({'chrom':chrom,'pos':temp2.columns[0]+1, \
+                                        'strand':'f','depth':depth,'ML':float(MC)/depth}, index=[0])
+                    ResML=ResML.append(toappend)
             # merge with other columns
             if (not temp.empty):
                 aggreC = pd.merge(aggreC,temp,how='outer',on=['Qname'])
@@ -443,6 +471,18 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                         dr = {'Qname': [pileupread.alignment.query_name], pileupcolumn.pos: [pileupread.alignment.query_sequence[pileupread.query_position]]}
                         dfr2 = pd.DataFrame(data=dr)
                         tempr=tempr.append(dfr2, ignore_index=True)
+                if melv:
+                    temp2 = tempr.replace(['G'],1)
+                    temp2 = temp2.replace(['C','A','T'],0)
+                    temp2 = temp2.drop('Qname',axis=1)
+                    MC=(temp2==1).sum(axis=0).to_numpy()
+                    UC=(temp2==0).sum(axis=0).to_numpy()
+                    depth=MC+UC
+                    if depth>3:
+                        toappend=pd.DataFrame({'chrom':chrom,'pos':temp2.columns[0]+1, \
+                                        'strand':'r','depth':depth,'ML':float(MC)/depth}, index=[0])
+                        ResML=ResML.append(toappend)
+                        
                 if (not tempr.empty):
                     aggreR = pd.merge(aggreR,tempr,how='outer',on=['Qname'])
                     aggreR = aggreR.drop_duplicates()
@@ -551,16 +591,11 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                                         dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
                                         chrom=chrom,D=D,w=w,dist=dist,MeH=MeH,ML=ML,depth=depth,strand='r',optional=optional)
                         ResultPW=ResultPW.append(toappend)
-                        
-                    else:
-                        if depth>3 and melv:
-                            ML=float(MU[0,i])/float(depth)
-                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
-                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
-                            ResultPW=ResultPW.append(toappend)
-
+#                    else:
+#                        if depth>3 and melv:
+#                            ML=float(MU[0,i])/float(depth)
+#                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
+##                           ResultPW=ResultPW.append(toappend)
             aggreR = aggreR.drop(meth.columns[0:1],axis=1)
             aggreR.dropna(axis = 0, thresh=2, inplace = True)
             
@@ -610,19 +645,19 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                                         chrom=chrom,D=D,w=w,dist=dist,MeH=MeH,ML=ML,depth=depth,strand='f',optional=optional)
                         ResultPW=ResultPW.append(toappend)
                         
-                    else:
-                        if depth>3 and melv:
-                            ML=float(MC)/float(depth)
-                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
-                            ResultPW=ResultPW.append(toappend)
-
+#                    else:
+#                        if depth>3 and melv:
+#                           ML=float(MC)/float(depth)
+#                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
+#                            ResultPW=ResultPW.append(toappend)
                         if ResultPW.shape[0] % 100000 == 1:   
                             ResultPW.to_csv(r"MeHdata/CG_%s.csv"%(filename),index = False, header=True)
+                            if melv:
+                                ResML.to_csv(r"MeHdata/CG_ML_%s.csv"%(filename),index = False, header=True)
                             if optional:
                                 Resultopt.to_csv(r"MeHdata/CG_opt_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
                                 print("Checkpoint CG. For file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
-
             aggreC = aggreC.drop(meth.columns[0:w],axis=1)
             aggreC.dropna(axis = 0, thresh=2, inplace = True)
             #print(aggreC)
@@ -670,17 +705,16 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                                         chrom=chrom,D=D,w=w,dist=dist,MeH=MeH,ML=ML,depth=depth,strand='r',optional=optional)
                         ResultPW=ResultPW.append(toappend)
                         
-                    else:
-                        if depth>3 and melv:
-                            ML=float(MC)/float(depth)
-                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
-                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
-                            ResultPW=ResultPW.append(toappend)
+#                    else:
+#                        if depth>3 and melv:
+#                            ML=float(MC)/float(depth)
+#                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
+#                            ResultPW=ResultPW.append(toappend)
 
                         if ResultPW.shape[0] % 100000 == 1:   
                             ResultPW.to_csv(r"MeHdata/CG_%s.csv"%(filename),index = False, header=True)
+                            if melv:
+                                ResML.to_csv(r"MeHdata/CG_ML_%s.csv"%(filename),index = False, header=True)
                             if optional:
                                 Resultopt.to_csv(r"MeHdata/CG_opt_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
@@ -693,7 +727,9 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
         ResultPW.to_csv(r"MeHdata/CG_%s.csv"%(filename),index = False, header=True)
         if optional:
             Resultopt.to_csv(r"MeHdata/CG_opt_%s.csv"%(filename),index = False, header=True)
-            
+        if melv:
+            ResML.to_csv(r"MeHdata/CG_ML_%s.csv"%(filename),index = False, header=True)
+                               
     return sample, coverage, cov_context, 'CG'        
     print("Done CG for file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
             
@@ -709,6 +745,10 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     
     aggreR = aggreC = pd.DataFrame(columns=['Qname'])
     ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','ML','depth','strand'])
+    if melv:
+        ResML = pd.DataFrame(columns=['chrom','pos','ML','depth','strand'])
+
+                            
     if optional:
         if w==3:
             Resultopt = pd.DataFrame(columns=\
@@ -740,12 +780,13 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     
     start=datetime.datetime.now()
     MU=np.zeros((2,w))
+    
     for pileupcolumn in samfile.pileup():
         coverage += 1
         chrom = pileupcolumn.reference_name
         if not silence:
             if (pileupcolumn.pos % 2000000 == 1):
-                print("CHH %s s %s w %s %s pos %s Result %s" % (datetime.datetime.now(),filename,w,chrom,pileupcolumn.pos,ResultPW.shape[0]))
+                print("CHH %s s %s w %s %s pos %s Result %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),filename,w,chrom,pileupcolumn.pos,ResultPW.shape[0]))
         
         # forward
         if fastafile.fetch(chrom,pileupcolumn.pos,pileupcolumn.pos+1)=='C' and fastafile.fetch(chrom,pileupcolumn.pos+1,pileupcolumn.pos+2)!='G' and fastafile.fetch(chrom,pileupcolumn.pos+2,pileupcolumn.pos+3)!='G':        
@@ -759,6 +800,17 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                     #df2.head()
                     temp=temp.append(df2, ignore_index=True)
             #temp.head()
+            if melv:
+                temp2 = temp.replace(['C'],1)
+                temp2 = temp2.replace(['G','A','T'],0)
+                temp2 = temp2.drop('Qname',axis=1)
+                MC=(temp2==1).sum(axis=0).to_numpy()
+                UC=(temp2==0).sum(axis=0).to_numpy()
+                depth=MC+UC
+                if depth>3:
+                    toappend=pd.DataFrame({'chrom':chrom,'pos':temp2.columns[0]+1, \
+                                        'strand':'f','depth':depth,'ML':float(MC)/depth}, index=[0])
+                    ResML=ResML.append(toappend)
             if (not temp.empty):
                 #temp.head()
                 aggreC = pd.merge(aggreC,temp,how='outer',on=['Qname'])
@@ -777,6 +829,17 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                         #df2.head()
                         tempr=tempr.append(df2, ignore_index=True)
                 #temp.head()
+                if melv:
+                    temp2 = tempr.replace(['G'],1)
+                    temp2 = temp2.replace(['C','A','T'],0)
+                    temp2 = temp2.drop('Qname',axis=1)
+                    MC=(temp2==1).sum(axis=0).to_numpy()
+                    UC=(temp2==0).sum(axis=0).to_numpy()
+                    depth=MC+UC
+                    if depth>3:
+                        toappend=pd.DataFrame({'chrom':chrom,'pos':temp2.columns[0]+1, \
+                                        'strand':'r','depth':depth,'ML':float(MC)/depth}, index=[0])
+                        ResML=ResML.append(toappend)
                 if (not tempr.empty):
                     #temp.head()
                     aggreR = pd.merge(aggreR,tempr,how='outer',on=['Qname'])
@@ -826,14 +889,11 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                         ResultPW=ResultPW.append(toappend)
                         
                     # else output methylation level
-                    else:
-                        if depth>3 and melv:
-                            ML=float(MC)/float(depth)
-                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
-                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
-                            ResultPW=ResultPW.append(toappend)
+#                    else:
+#                        if depth>3 and melv:
+#                            ML=float(MC)/float(depth)
+#                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
+#                            ResultPW=ResultPW.append(toappend)
 
             aggreC = aggreC.drop(meth.columns[0:1],axis=1)
             aggreC.dropna(axis = 0, thresh=2, inplace = True)
@@ -883,15 +943,11 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                                         chrom=chrom,D=D,w=w,dist=dist,MeH=MeH,ML=ML,depth=depth,strand='r',optional=optional)
                         ResultPW=ResultPW.append(toappend)
                         
-                    else:
-                        if depth>3 and melv:
-                            ML=float(MC)/float(depth)
-                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
-                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
-                            ResultPW=ResultPW.append(toappend)
-                    
+#                    else:
+#                        if depth>3 and melv:
+#                            ML=float(MC)/float(depth)
+#                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
+#                            ResultPW=ResultPW.append(toappend)               
             aggreR = aggreR.drop(meth.columns[0:1],axis=1)
             aggreR.dropna(axis = 0, thresh=2, inplace = True)
             
@@ -942,20 +998,18 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                         ResultPW=ResultPW.append(toappend)
                         
     
-                    else:
-                        if depth>3 and melv:
-                            ML=float(MC)/float(depth)
-                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
-                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
-                            ResultPW=ResultPW.append(toappend)
+#                    else:
+#                        if depth>3 and melv:
+#                            ML=float(MC)/float(depth)
+#                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
+#                            ResultPW=ResultPW.append(toappend)
 
                         if ResultPW.shape[0] % 100000 == 1:   
                             ResultPW.to_csv(r"MeHdata/CHH_%s.csv"%(filename),index = False, header=True)
                             if optional:
                                 Resultopt.to_csv(r"MeHdata/CHH_opt_%s.csv"%(filename),index = False, header=True)
-                            
+                            if melv:
+                                ResML.to_csv(r"MeHdata/CHH_ML_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
                                 print("Checkpoint CHH. For file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
 
@@ -1004,17 +1058,16 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                                         dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
                                         chrom=chrom,D=D,w=w,dist=dist,MeH=MeH,ML=ML,depth=depth,strand='r',optional=optional)
                         ResultPW=ResultPW.append(toappend)
-                    else:
-                        if depth>3 and melv:
-                            ML=float(MC)/float(depth)
-                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
-                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
-                            ResultPW=ResultPW.append(toappend)
+#                    else:
+#                        if depth>3 and melv:
+#                            ML=float(MC)/float(depth)
+#                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
+#                            ResultPW=ResultPW.append(toappend)
 
                         if ResultPW.shape[0] % 100000 == 1:   
                             ResultPW.to_csv(r"MeHdata/CHH_%s.csv"%(filename),index = False, header=True)
+                            if melv:
+                                ResML.to_csv(r"MeHdata/CHH_ML_%s.csv"%(filename),index = False, header=True)
                             if optional:
                                 Resultopt.to_csv(r"MeHdata/CHH_opt_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
@@ -1027,6 +1080,8 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             
     if ResultPW.shape[0]>0:   
         ResultPW.to_csv(r"MeHdata/CHH_%s.csv"%(filename),index = False, header=True)
+        if melv:
+            ResML.to_csv(r"MeHdata/CHH_ML_%s.csv"%(filename),index = False, header=True)
         if optional:
             Resultopt.to_csv(r"MeHdata/CHH_opt_%s.csv"%(filename),index = False, header=True)
     return sample, coverage, cov_context, 'CHH'                        
@@ -1041,6 +1096,9 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     coverage = cov_context = 0
     aggreR = aggreC = pd.DataFrame(columns=['Qname'])
     ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','ML','depth','strand'])
+    if melv:
+        ResML = pd.DataFrame(columns=['chrom','pos','ML','depth','strand'])
+        
     if optional:
         if w==3:
             Resultopt = pd.DataFrame(columns=\
@@ -1078,7 +1136,7 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
         chrom = pileupcolumn.reference_name
         if not silence:
             if (pileupcolumn.pos % 2000000 == 1):
-                print("CHG %s s %s w %s %s pos %s Result %s" % (datetime.datetime.now(),filename,w,chrom,pileupcolumn.pos,ResultPW.shape[0]))
+                print("CHG %s s %s w %s %s pos %s Result %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),filename,w,chrom,pileupcolumn.pos,ResultPW.shape[0]))
         
         if fastafile.fetch(chrom,pileupcolumn.pos,pileupcolumn.pos+1)=='C' and fastafile.fetch(chrom,pileupcolumn.pos+1,pileupcolumn.pos+2)!='G' and fastafile.fetch(chrom,pileupcolumn.pos+2,pileupcolumn.pos+3)=='G':        
             cov_context += 1
@@ -1091,6 +1149,16 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                     #df2.head()
                     temp=temp.append(df2, ignore_index=True)
             #temp.head()
+            if melv:
+                temp2 = temp.replace(['C'],1)
+                temp2 = temp2.replace(['G','A','T'],0)
+                temp2 = temp2.drop('Qname',axis=1)
+                MC=(temp2==1).sum(axis=0)
+                UC=(temp2==0).sum(axis=0)
+                if MC+UC>3:
+                    toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0]+1, \
+                                            'strand':'f','depth':MC+UC,'ML':float(MC)/float(MC+UC)}, index=[0])
+                    ResML=ResML.append(toappend)
             if (not temp.empty):
                 #temp.head()
                 aggreC = pd.merge(aggreC,temp,how='outer',on=['Qname'])
@@ -1109,6 +1177,16 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                         #df2.head()
                         tempr=tempr.append(df2r, ignore_index=True)
                 #temp.head()
+                if melv:
+                    temp2 = tempr.replace(['G'],1)
+                    temp2 = temp2.replace(['C','A','T'],0)
+                    temp2 = temp2.drop('Qname',axis=1)
+                    MC=(temp2==1).sum(axis=0)
+                    UC=(temp2==0).sum(axis=0)
+                    if MC+UC>3:
+                        toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0]+1, \
+                                            'strand':'r','depth':MC+UC,'ML':float(MC)/float(MC+UC)}, index=[0])
+                        ResML=ResML.append(toappend)
                 if (not tempr.empty):
                     #temp.head()
                     aggreR = pd.merge(aggreR,tempr,how='outer',on=['Qname'])
@@ -1127,10 +1205,6 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             # impute once if valid
             for i in range(0,meth.shape[1]-w+1,1):
                 window = meth.iloc[:,range(i,i+w)].values
-                MC=(window==1).sum(axis=0)[0]
-                UC=(window==0).sum(axis=0)[0]
-                MU[0,i]=MC
-                MU[1,i]=UC
                 # if eligible for imputation
                 if enough_reads(window,w,complete=False):
                     window=pd.DataFrame(data=impute(window,w))
@@ -1141,10 +1215,12 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             for i in range(0,meth.shape[1]-w+1,1):
                 if i<w:
                     window = meth.iloc[:,range(i,i+w)].values
-                    #if enough_reads(window,w,complete=True):                 
-                    depth=MU[0,i]+MU[1,i]
+                    #if enough_reads(window,w,complete=True):
+                    MC=(window==1).sum(axis=0)[0]
+                    UC=(window==0).sum(axis=0)[0]
+                    depth=MC+UC
                     if enough_reads(window,w,complete=True):
-                        ML=float(MU[0,i])/float(depth)
+                        ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
                         if optional:
                             toappend,opt=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
@@ -1157,14 +1233,11 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                                         chrom=chrom,D=D,w=w,dist=dist,MeH=MeH,ML=ML,depth=depth,optional=optional,strand='f')
                         ResultPW=ResultPW.append(toappend)
                         
-                    else:
-                        if depth>3 and melv:
-                            ML=float(MC)/float(depth)
-                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
-                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
-                            ResultPW=ResultPW.append(toappend)
+#                    else:
+#                        if depth>3 and melv:
+#                            ML=float(MC)/float(depth)
+#                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'f'}, index=[0])    
+#                            ResultPW=ResultPW.append(toappend)
 
                     
             aggreC = aggreC.drop(meth.columns[0:1],axis=1)
@@ -1185,10 +1258,6 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             # impute once if valid
             for i in range(0,meth.shape[1]-w+1,1):
                 window = meth.iloc[:,range(i,i+w)].values
-                MC=(window==1).sum(axis=0)[0]
-                UC=(window==0).sum(axis=0)[0]
-                MU[0,i]=MC
-                MU[1,i]=UC
                 # if eligible for imputation
                 if enough_reads(window,w,complete=False):
                     window=pd.DataFrame(data=impute(window,w))
@@ -1200,9 +1269,11 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                 if i<w:
                     window = meth.iloc[:,range(i,i+w)].values
                     #if enough_reads(window,w,complete=True):
-                    depth=MU[0,i]+MU[1,i]
+                    MC=(window==1).sum(axis=0)[0]
+                    UC=(window==0).sum(axis=0)[0]
+                    depth=MC+UC
                     if enough_reads(window,w,complete=True):
-                        ML=float(MU[0,i])/float(depth)
+                        ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
                         if optional:
                             toappend,opt=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
@@ -1215,14 +1286,11 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                                         chrom=chrom,D=D,w=w,dist=dist,MeH=MeH,ML=ML,depth=depth,optional=optional,strand='r')
                         ResultPW=ResultPW.append(toappend)
                         
-                    else:
-                        if depth>3 and melv:
-                            ML=float(MC)/float(depth)
-                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
-                            #MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
-                            #                chrom=chrom,D=D,w=w,dist=dist,MeH=2,ML=ML,depth=depth)
-                            ResultPW=ResultPW.append(toappend)
+#                    else:
+#                         if depth>3 and melv:
+#                            ML=float(MC)/float(depth)
+#                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
+#                            ResultPW=ResultPW.append(toappend)
 
             aggreR = aggreR.drop(meth.columns[0:1],axis=1)
             aggreR.dropna(axis = 0, thresh=2, inplace = True)
@@ -1243,10 +1311,6 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             # impute once if valid
             for i in range(0,meth.shape[1]-w+1,1):
                 window = meth.iloc[:,range(i,i+w)].values
-                MC=(window==1).sum(axis=0)[0]
-                UC=(window==0).sum(axis=0)[0]
-                MU[0,i-w+1]=MC
-                MU[1,i-w+1]=UC
                 # if eligible for imputation
                 if enough_reads(window,w,complete=False):
                     window=pd.DataFrame(data=impute(window,w))
@@ -1257,9 +1321,11 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             for i in range(0,meth.shape[1]-w+1,1):
                 if i>w-2 and i<2*w:
                     window = meth.iloc[:,range(i,i+w)].values
-                    depth=MU[0,i-w+1]+MU[1,i-w+1]
+                    MC=(window==1).sum(axis=0)[0]
+                    UC=(window==0).sum(axis=0)[0]
+                    depth=MC+UC
                     if enough_reads(window,w,complete=True):
-                        ML=float(MU[0,i-w+1])/float(depth)
+                        ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
                         if optional:
                             toappend,opt=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
@@ -1272,16 +1338,18 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                                         chrom=chrom,D=D,w=w,dist=dist,MeH=MeH,ML=ML,depth=depth,optional=optional,strand='f')
                         ResultPW=ResultPW.append(toappend)
                         
-                    else:
-                        if depth>3 and melv:
-                            ML=float(MC)/float(depth)
-                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth}, index=[0])    
-                            ResultPW=ResultPW.append(toappend)
+#                    else:
+#                        if depth>3 and melv:
+#                            ML=float(MC)/float(depth)
+#                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth}, index=[0])    
+#                            ResultPW=ResultPW.append(toappend)
 
                         if ResultPW.shape[0] % 100000 == 1:   
                             ResultPW.to_csv(r"MeHdata/CHG_%s.csv"%(filename),index = False, header=True)
                             if optional:
                                 Resultopt.to_csv(r"MeHdata/CHG_opt_%s.csv"%(filename),index = False, header=True)
+                            if melv:
+                                ResML.to_csv(r"MeHdata/CHG_ML_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
                                 print("Checkpoint CHG. For file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
 
@@ -1303,10 +1371,6 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             for i in range(0,meth.shape[1]-w+1,1):
                 window = meth.iloc[:,range(i,i+w)].values
                 # if eligible for imputation
-                MC=(window==1).sum(axis=0)[0]
-                UC=(window==0).sum(axis=0)[0]
-                MU[0,i-w+1]=MC
-                MU[1,i-w+1]=UC
                 if enough_reads(window,w,complete=False):
                     window=pd.DataFrame(data=impute(window,w))
                     ind=np.where(window.notnull().sum(axis=1)==w)[0]
@@ -1317,9 +1381,11 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                 if i>w-2 and i<2*w:
                     window = meth.iloc[:,range(i,i+w)].values
                     #if enough_reads(window,w,complete=True):
-                    depth=MU[0,i-w+1]+MU[1,i-w+1]
+                    MC=(window==1).sum(axis=0)[0]
+                    UC=(window==0).sum(axis=0)[0]
+                    depth=MC+UC
                     if enough_reads(window,w,complete=True):
-                        ML=float(MU[0,i-w+1])/float(depth)
+                        ML=float(MC)/float(depth)
                         matforMH=getcomplete(window,w)
                         if optional:
                             toappend,opt=MeHperwindow(pd.DataFrame(matforMH),start=meth.iloc[:,range(i,i+w)].columns[0],\
@@ -1331,16 +1397,18 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                                         dis=meth.iloc[:,range(i,i+w)].columns[w-1]-meth.iloc[:,range(i,i+w)].columns[0],\
                                         chrom=chrom,D=D,w=w,dist=dist,MeH=MeH,ML=ML,depth=depth,optional=optional,strand='r')
                         ResultPW=ResultPW.append(toappend)
-                    else:
-                        if depth>3 and melv:
-                            ML=float(MC)/float(depth)
-                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
-                            ResultPW=ResultPW.append(toappend)
+#                    else:
+#                        if depth>3 and melv:
+#                            ML=float(MC)/float(depth)
+#                            toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0],'MeH':np.nan,'dis':np.nan,'ML':round(ML,3),'depth':depth,'strand':'r'}, index=[0])    
+#                            ResultPW=ResultPW.append(toappend)
 
                         if ResultPW.shape[0] % 100000 == 1:   
                             ResultPW.to_csv(r"MeHdata/CHG_%s.csv"%(filename),index = False, header=True)
                             if optional:
                                 Resultopt.to_csv(r"MeHdata/CHG_opt_%s.csv"%(filename),index = False, header=True)
+                            if melv:
+                                ResML.to_csv(r"MeHdata/CHG_ML_%s.csv"%(filename),index = False, header=True)
                             if not silence: 
                                 print("Checkpoint CHG. For file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
 
@@ -1349,6 +1417,8 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             
     if ResultPW.shape[0]>0:   
         ResultPW.to_csv(r"MeHdata/CHG_%s.csv"%(filename),index = False, header=True)
+        if melv:
+            ResML.to_csv(r"MeHdata/CHG_ML_%s.csv"%(filename),index = False, header=True)
         if optional:
             Resultopt.to_csv(r"MeHdata/CHG_opt_%s.csv"%(filename),index = False, header=True)
                             
@@ -1390,7 +1460,10 @@ def split_bam(samplenames,Folder):
             
     outfile.close()
     pysam.index(fileout)
-        
+
+
+    
+
 import argparse
 parser = argparse.ArgumentParser()
 #parser.add_argument("-i", "--input", dest="filename", type=validate_file, required=True, help="enter input file", metavar="FILE")
@@ -1421,6 +1494,8 @@ from joblib import Parallel, delayed
 #num_cores = multiprocessing.cpu_count()
                                                 
 if __name__ == "__main__":
+    
+    open_log('MeHscreening.log')
     
     start = time.time()
     Folder = 'MeHdata/'
@@ -1456,6 +1531,8 @@ if __name__ == "__main__":
     if args.CG:
         con='CG'
         CG=Parallel(n_jobs=args.cores)(delayed(CGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
+        
+        logm("Merging MeH within samples for CG.")
         # merge MeH within sample
         for file in spbam_list:
             filename, file_extension = os.path.splitext(file)
@@ -1505,14 +1582,14 @@ if __name__ == "__main__":
         #os.chdir('../')
         #os.chdir(outputFolder)
         
-        
+        logm("Merging ML within samples for CG.")
         # append ML within samples
         if args.mlv:
             for file in spbam_list:
                 filename, file_extension = os.path.splitext(file)
                 sample = str.split(file,'_')[0]
                 res_dir = Folder + con + '_ML_' + str(sample) + '.csv'
-                toapp_dir = Folder + con + '_' + file + '.csv'
+                toapp_dir = Folder + con + '_ML_' + file + '.csv'
                 if os.path.exists(res_dir):
                     Tomod = pd.read_csv(res_dir) 
                     Toappend = pd.read_csv(toapp_dir)
@@ -1535,7 +1612,7 @@ if __name__ == "__main__":
                     Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
                     Tomod = Tomod.append(Toappend)
                     Tomod.to_csv(res_dir,index = False,header=True)
-                    os.remove(toapp_dir)
+                    #os.remove(toapp_dir)
                 else:
                     Toappend = pd.read_csv(toapp_dir)
                     Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
@@ -1555,10 +1632,10 @@ if __name__ == "__main__":
                     #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
                     Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
                     Toappend.to_csv(res_dir,index = False,header=True)
-                    os.remove(toapp_dir)
-        
+                    #os.remove(toapp_dir)
+        logm("Merging ML between samples for CG.")
         # merge ML between samples
-        #if args.mlv:
+        if args.mlv:
             for sample in bam_list: 
                 tomerge_dir = Folder +  con + '_ML_' + str(sample) + '.csv' 
                 res_dir = Folder +  con + '_ML_' + 'Results.csv'
@@ -1578,7 +1655,7 @@ if __name__ == "__main__":
                     Result.dropna(axis = 0, thresh=4, inplace = True)
                     Result.to_csv(res_dir,index = False,header=True)
                     os.remove(tomerge_dir)
-                    
+        logm("Merging MeH between samples for CG.")              
         # merge MeH between samples
         for sample in bam_list: 
             tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
@@ -1605,7 +1682,7 @@ if __name__ == "__main__":
 
         Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
         print("All done.",len(bam_list),"bam files processed and merged for CG.")
-    
+        logm("All done. "+str(len(bam_list))+" bam files processed and merged for CG.")
         for i in CG:
             toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_coverage':i[2],'context':i[3]},index=[0])
             topp=topp.append(toout)
@@ -1616,6 +1693,7 @@ if __name__ == "__main__":
         con='CHG'
         CG=Parallel(n_jobs=args.cores)(delayed(CHGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
         
+        logm("Merging MeH within samples for CHG.")  
         for file in spbam_list:
             filename, file_extension = os.path.splitext(file)
             sample = str.split(file,'_')[0]
@@ -1663,14 +1741,14 @@ if __name__ == "__main__":
 
         #os.chdir('../')
         #os.chdir(outputFolder)
-        
+        logm("Merging ML within samples for CHG.")    
         # append ML within samples
         if args.mlv:
             for file in spbam_list:
                 filename, file_extension = os.path.splitext(file)
                 sample = str.split(file,'_')[0]
                 res_dir = Folder + con + '_ML_' + str(sample) + '.csv'
-                toapp_dir = Folder + con + '_' + file + '.csv'
+                toapp_dir = Folder + con + '_ML_' + file + '.csv'
                 if os.path.exists(res_dir):
                     Tomod = pd.read_csv(res_dir) 
                     Toappend = pd.read_csv(toapp_dir)
@@ -1714,9 +1792,9 @@ if __name__ == "__main__":
                     Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
                     Toappend.to_csv(res_dir,index = False,header=True)
                     os.remove(toapp_dir)
-        
+        logm("Merging ML between samples for CHG.")     
         # merge ML between samples
-        #if args.mlv:
+        if args.mlv:
             for sample in bam_list: 
                 tomerge_dir = Folder +  con + '_ML_' + str(sample) + '.csv' 
                 res_dir = Folder +  con + '_ML_' + 'Results.csv'
@@ -1736,7 +1814,7 @@ if __name__ == "__main__":
                     Result.dropna(axis = 0, thresh=4, inplace = True)
                     Result.to_csv(res_dir,index = False,header=True)
                     os.remove(tomerge_dir)
-                    
+        logm("Merging MeH between samples for CHG.")            
         # merge MeH between samples
         for sample in bam_list: 
             tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
@@ -1760,10 +1838,10 @@ if __name__ == "__main__":
                 Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
                 os.remove(tomerge_dir)
 
-
         Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
-        print("All done.",len(bam_list),"bam files processed and merged for CHG.")
-    
+        #print("All done.",len(bam_list),"bam files processed and merged for CHG.")
+        logm("All done. "+str(len(bam_list))+" bam files processed and merged for CHG.")
+        
         for i in CG:
             toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_coverage':i[2],'context':i[3]},index=[0])
             topp=topp.append(toout)
@@ -1773,6 +1851,7 @@ if __name__ == "__main__":
         con='CHH'
         CG=Parallel(n_jobs=args.cores)(delayed(CHHgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
     
+        logm("Merging MeH within samples for CHH.")
         # merge MeH within sample
         for file in spbam_list:
             filename, file_extension = os.path.splitext(file)
@@ -1819,16 +1898,14 @@ if __name__ == "__main__":
                         Toappend.to_csv(res_dir,index = False,header=True)
                         os.remove(toapp_dir)
 
-        #os.chdir('../')
-        #os.chdir(outputFolder)
-        
+        logm("Merging ML within samples for CHH.")
         # append ML within samples
         if args.mlv:
             for file in spbam_list:
                 filename, file_extension = os.path.splitext(file)
                 sample = str.split(file,'_')[0]
                 res_dir = Folder + con + '_ML_' + str(sample) + '.csv'
-                toapp_dir = Folder + con + '_' + file + '.csv'
+                toapp_dir = Folder + con + '_ML_' + file + '.csv'
                 if os.path.exists(res_dir):
                     Tomod = pd.read_csv(res_dir) 
                     Toappend = pd.read_csv(toapp_dir)
@@ -1872,9 +1949,9 @@ if __name__ == "__main__":
                     Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
                     Toappend.to_csv(res_dir,index = False,header=True)
                     os.remove(toapp_dir)
-        
+        logm("Merging ML between samples for CHH.")
         # merge ML between samples
-        #if args.mlv:
+        if args.mlv:
             for sample in bam_list: 
                 tomerge_dir = Folder +  con + '_ML_' + str(sample) + '.csv' 
                 res_dir = Folder +  con + '_ML_' + 'Results.csv'
@@ -1919,8 +1996,9 @@ if __name__ == "__main__":
                 os.remove(tomerge_dir)
 
         Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
-        print("All done.",len(bam_list),"bam files processed and merged for CHH.")
-    
+        print("All done.",len(bam_list),"bam files processed and merged for CHH.")    
+        logm("All done. "+str(len(bam_list))+" bam files processed and merged for CHH.")
+        
         for i in CG:
             toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_coverage':i[2],'context':i[3]},index=[0])
             topp=topp.append(toout)
@@ -1936,11 +2014,13 @@ if __name__ == "__main__":
         
     
     end = time.time()
-    print('Completed in: %s sec'% (end - start))
     
     for i in range(topp.shape[0]):
         #print('i = ',i)
-        print('Sample', topp.iloc[i,1],'has coverage',topp.iloc[i,2],'for context',topp.iloc[i,0],'out of data coverage', topp.iloc[i,3])
+        print('Sample', topp.iloc[i,1],'has coverage',topp.iloc[i,2],'for context',topp.iloc[i,0],'out of data coverage',topp.iloc[i,3])
+        logm('Sample'+str(topp.iloc[i,1])+'has coverage'+str(topp.iloc[i,2])+'for context'+str(topp.iloc[i,0])+'out of data coverage'+str(topp.iloc[i,3]))
+
+
 # FINAL FINAL
 # /MH/test
 # python3 testfull.py -w 4 -c 4 --CG --CHG --opt --mlv
