@@ -1163,7 +1163,7 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                 UC=(temp2==0).sum(axis=0).to_numpy()
                 depth=MC+UC
                 if depth>3:
-                    toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0]+1, \
+                    toappend=pd.DataFrame({'chrom':chrom,'pos':temp2.columns[0]+1, \
                                             'strand':'f','depth':depth,'ML':float(MC)/float(MC+UC)}, index=[0])
                     ResML=ResML.append(toappend)
             if (not temp.empty):
@@ -1193,7 +1193,7 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                     UC=(temp2==0).sum(axis=0).to_numpy()
                     depth=MC+UC
                     if depth>3:
-                        toappend=pd.DataFrame({'chrom':chrom,'pos':meth.iloc[:,range(i,i+w)].columns[0]+1, \
+                        toappend=pd.DataFrame({'chrom':chrom,'pos':temp2.columns[0]+1, \
                                             'strand':'r','depth':depth,'ML':float(MC)/float(MC+UC)}, index=[0])
                         ResML=ResML.append(toappend)
                 if (not tempr.empty):
@@ -2028,7 +2028,7 @@ if __name__ == "__main__":
     for i in range(topp.shape[0]):
         #print('i = ',i)
         print('Sample', topp.iloc[i,1],'has coverage',topp.iloc[i,2],'for context',topp.iloc[i,0],'out of data coverage',topp.iloc[i,3])
-        logm('Sample'+str(topp.iloc[i,1])+'has coverage'+str(topp.iloc[i,2])+'for context'+str(topp.iloc[i,0])+'out of data coverage'+str(topp.iloc[i,3]))
+        logm('Sample '+str(topp.iloc[i,1])+' has coverage '+str(topp.iloc[i,2])+' for context '+str(topp.iloc[i,0])+' out of data coverage '+str(topp.iloc[i,3])+ '.')
 
 
 # FINAL FINAL
