@@ -24,39 +24,19 @@ from collections import Counter, defaultdict, OrderedDict
 #---------------------------------------
 
     
-def open_log(fname):
-    open_log.logfile = open(fname, 'w', 1)
+def open_log(filename):
+    open_log.logfile = open(filename, 'w', 1)
     
 
-def logm(message):
-    log_message = "[%s] %s\n" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), message)
-    print(log_message),
-    open_log.logfile.write(log_message)
+def logm(m):
+    log_m = "[%s] %s\n" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), m)
+    print(log_m),
+    open_log.logfile.write(log_m)
 
 def close_log():
     open_log.logfile.close()
     
-    
-# Count # of windows with enough reads for complete/impute
-def coverage(methbin,complete,w):
-    count=0
-    tot = 0
-    meth=methbin.iloc[:,methbin.columns!='Qname']
-    if len(meth.columns)>=w:
-        for i in range(len(meth.columns)-w+1):
-            # extract a window
-            temp = meth.iloc[:,i:i+w].copy()
-            #print(temp)
-            tot = tot+1
-            if (enough_reads(window=temp,complete=complete,w=w)):
-                count=count+1
-                #toprint=temp.notnull().sum(axis=1)>=w
-                #print(toprint.sum())
-        #print(count)
-        #print(tot)
-        return count/tot*100
-    else: 
-        return 0
+
 
 # Check whether a window has enough reads for complete/impute
 def enough_reads(window,w,complete):
@@ -67,32 +47,7 @@ def enough_reads(window,w,complete):
         tempw1=np.isnan(window).sum(axis=1)==1
         return temp.sum()>=2**(w-2) and tempw1.sum()>0
     
-
-def impute(window,w):
-    full_ind=np.where(np.isnan(window).sum(axis=1)==0)[0]
-    part_ind=np.where(np.isnan(window).sum(axis=1)==1)[0]
-    for i in range(len(part_ind)):
-        sam = []
-        # which column is nan
-        pos=np.where(np.isnan(window[part_ind[i],:]))[0]
-        if np.unique(window[np.where(np.invert(np.isnan(window[:,pos])))[0],pos]).shape[0]==1:
-            window[part_ind[i],pos]=window[np.where(np.invert(np.isnan(window[:,pos])))[0],pos][0]
-        else:
-            #print("win_part i pos =",window[part_ind[i],pos])
-            for j in range(len(full_ind)):
-                if (window[part_ind[i],:]==window[full_ind[j],:]).sum()==w-1:
-                    sam.append(j)
-            if len(sam)>0:
-                s1=random.sample(sam, 1)
-                s=window[full_ind[s1],pos]
-            else:
-                s=random.sample(window[np.where(np.invert(np.isnan(window[:,pos])))[0],pos].tolist(), k=1)[0]
-            window[part_ind[i],pos]=np.float64(s)
-            #print("win_part i =",window[part_ind[i],pos])
-            #print("s = ",np.float64(s))
-    return window 
    
-
 def getcomplete(window,w):
     temp=np.isnan(window).sum(axis=1)==0
     mat=window[np.where(temp)[0],:]
@@ -341,7 +296,6 @@ def MeHperwindow(pat,start,dis,chrom,D,w,depth,optional,MeH=2,dist=1,strand='f')
     else:
         return out
 
-
 def impute(window,w):
     full_ind=np.where(np.isnan(window).sum(axis=1)==0)[0]
     part_ind=np.where(np.isnan(window).sum(axis=1)==1)[0]
@@ -365,7 +319,6 @@ def impute(window,w):
             #print("win_part i =",window[part_ind[i],pos])
             #print("s = ",np.float64(s))
     return window 
-
 
 def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     filename, file_extension = os.path.splitext(bamfile)
