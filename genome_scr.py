@@ -127,59 +127,6 @@ def WDK_d(pat1,pat2):
             d+=s
     return d
 
-# input a window of w CGs and output a list of proportions with starting genomic location and genomic distance across
-def window_summ(pat,start,dis,chrom): 
-    m=np.shape(pat)[0]
-    d=np.shape(pat)[1]
-    all_pos=np.zeros((2**d,d))
-    for i in range(d): 
-        all_pos[:,i]=np.linspace(0,2**d-1,2**d)%(2**(i+1))//(2**i)
-    #print(all_pos)
-    
-    prob=np.zeros((2**d,1))
-    #print(prob)
-    for i in range(2**d): 
-        count = 0
-        for j in range(m):
-            if (all_pos[i,:]==pat.iloc[j,:]).sum()==d:
-                count += 1
-                #print(count)
-        prob[i]=count
-
-
-    if d==3:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
-                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'dis':dis})    
-    if d==4:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
-                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
-                    'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
-                    'p16':prob[15],'dis':dis})   
-    if d==5:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
-                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
-                    'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
-                    'p16':prob[15],'p17':prob[16],'p18':prob[17],'p19':prob[18],'p20':prob[19],\
-                    'p21':prob[20],'p22':prob[21],'p23':prob[22],'p24':prob[23],'p25':prob[24],\
-                    'p26':prob[25],'p27':prob[26],'p28':prob[27],'p29':prob[28],'p30':prob[29],\
-                    'p31':prob[30],'p32':prob[31],'dis':dis})
-    if d==6:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
-                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
-                    'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
-                    'p16':prob[15],'p17':prob[16],'p18':prob[17],'p19':prob[18],'p20':prob[19],\
-                    'p21':prob[20],'p22':prob[21],'p23':prob[22],'p24':prob[23],'p25':prob[24],\
-                    'p26':prob[25],'p27':prob[26],'p28':prob[27],'p29':prob[28],'p30':prob[29],\
-                    'p31':prob[30],'p32':prob[31],'p33':prob[32],'p34':prob[33],'p35':prob[34],\
-                    'p36':prob[35],'p37':prob[36],'p38':prob[37],'p39':prob[38],'p40':prob[39],\
-                    'p41':prob[40],'p42':prob[41],'p43':prob[42],'p44':prob[43],'p45':prob[44],\
-                    'p46':prob[45],'p47':prob[46],'p48':prob[47],'p49':prob[48],'p50':prob[49],\
-                    'p51':prob[50],'p52':prob[51],'p53':prob[52],'p54':prob[53],'p55':prob[54],\
-                    'p56':prob[55],'p57':prob[56],'p58':prob[57],'p59':prob[58],'p60':prob[59],\
-                    'p61':prob[60],'p62':prob[61],'p63':prob[62],'p64':prob[63],'dis':dis})
-    return out
-
-
 def MeHperwindow(pat,start,dis,chrom,D,w,depth,optional,MeH=2,dist=1,strand='f'): 
     count=np.zeros((2**w,1))
     m=np.shape(pat)[0]
