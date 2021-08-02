@@ -1,4 +1,4 @@
-import setup, find_packages
+from setuptools import setup, find_packages
 
 VERSION = '0.0.1' 
 DESCRIPTION = 'A bioinformatic tool for profiling methylation heterogeneity genomewide'
