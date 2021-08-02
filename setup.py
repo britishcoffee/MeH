@@ -1,4 +1,4 @@
-import setuptools
+import setup, find_packages
 
 VERSION = '0.0.1' 
 DESCRIPTION = 'A bioinformatic tool for profiling methylation heterogeneity genomewide'
@@ -8,14 +8,14 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 # Setting up
-setuptools.setup(
+setup(
         name="MeHscr", 
         version=VERSION,
         author="Ya-Ting Sabrina Chang",
         author_email="<ytchang.sabrina@gmail.com>",
         url="https://github.com/britishcoffee/Methylationhet",
 	license='MIT',
-        packages=setuptools.find_packages(),
+        packages=find_packages(),
         description=DESCRIPTION,
         long_description=LONG_DESCRIPTION,
         install_requires=['pysam==0.16.0.1','numpy==1.16.6','pandas==0.24.2','joblib'], # add any additional packages that 
