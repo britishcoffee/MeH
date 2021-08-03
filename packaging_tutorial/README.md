@@ -4,6 +4,10 @@
 * pandas package 0.21 +
 * pysam package 0.16.0.1 +
 
+### Can be fulfilled by running
+```js
+pip install MeHscr
+```
 ## Methylation heterogeneity profiling
 
 ### 1. Download genome_scr.py
