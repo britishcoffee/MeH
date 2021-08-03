@@ -14,6 +14,7 @@ pip install MeHscr
 ```js
 wget --no-check-certificate --content-disposition https://raw.githubusercontent.com/britishcoffee/Methylationhet/main/genome_scr.py?token=AHGRPBQHJLPQXPOTCTEEZ4LAU5SLK
 curl -LJO https://raw.githubusercontent.com/britishcoffee/Methylationhet/main/genome_scr.py?token=AHGRPBQHJLPQXPOTCTEEZ4LAU5SLK
+wget https://raw.githubusercontent.com/britishcoffee/Methylationhet/main/packaging_tutorial/src/MeHscr/genome_scr.py
 mv genome_scr.py?token=AHGRPBQHJLPQXPOTCTEEZ4LAU5SLK genome_scr.py
 ```
 ### 2. Open a folder named "MeHdata" under the same directory
