@@ -1,11 +1,9 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.0.2' 
+VERSION = '0.0.8' 
 DESCRIPTION = 'A bioinformatic tool for profiling methylation heterogeneity genomewide'
 LONG_DESCRIPTION = ''
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
 
 # Setting up
 setup(
@@ -17,6 +15,7 @@ setup(
 	license='MIT',
         packages=['MeHscr'],
         description=DESCRIPTION,
+	scripts=['bin/genome_scr'],
         long_description=LONG_DESCRIPTION,
         install_requires=['pysam==0.16.0.1','numpy==1.16.6','pandas==0.24.2','joblib'], # add any additional packages that 
         # needs to be installed along with your package. Eg: 'caer'
