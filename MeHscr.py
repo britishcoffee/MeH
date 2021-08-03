@@ -1,7 +1,7 @@
 ##
 #---------------------------------------------------------------------
 # SERVER only input all files (.bam and .fa) output MeH matrix in .csv
-# August 2, 2021 clean
+# August 3, 2021 clean
 # FINAL github
 #---------------------------------------------------------------------
 
@@ -301,7 +301,6 @@ def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'):
                 score-=(i/m)*np.log2(i/m)/w
     elif MeH==5: #Epipoly
         score=1-((count/m)**2).sum(axis=0)
-    out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':round(score,5),'dis':dis,'depth':depth,'strand':strand}, index=[0])    
     
     if optional:
         if MeH!=3:
@@ -309,12 +308,12 @@ def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'):
             count=np.concatenate((count[[0]],count))
         if w==3:
             opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[1],'p02':count[2],'p03':count[3],'p04':count[4],\
-                        'p05':count[5],'p06':count[6],'p07':count[7],'p08':count[8],'MeH':round(score,5),'dis':dis,'depth':depth,'strand':strand}, index=[0])     
+                        'p05':count[5],'p06':count[6],'p07':count[7],'p08':count[8],'MeH':round(score,5),'dis':dis,'strand':strand}, index=[0])     
         if w==4:
             opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[1],'p02':count[2],'p03':count[3],'p04':count[4],\
                         'p05':count[5],'p06':count[6],'p07':count[7],'p08':count[8],'p09':count[9],'p10':count[10],\
                         'p11':count[11],'p12':count[12],'p13':count[13],'p14':count[14],'p15':count[15],\
-                        'p16':count[16],'MeH':round(score,5),'dis':dis,'depth':depth,'strand':strand}, index=[0])   
+                        'p16':count[16],'MeH':round(score,5),'dis':dis,'strand':strand}, index=[0])   
         if w==5:
             opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[1],'p02':count[2],'p03':count[3],'p04':count[4],\
                         'p05':count[5],'p06':count[6],'p07':count[7],'p08':count[8],'p09':count[9],'p10':count[10],\
@@ -322,7 +321,7 @@ def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'):
                         'p16':count[16],'p17':count[17],'p18':count[18],'p19':count[19],'p20':count[20],\
                         'p21':count[21],'p22':count[22],'p23':count[23],'p24':count[24],'p25':count[25],\
                         'p26':count[26],'p27':count[27],'p28':count[28],'p29':count[29],'p30':count[30],\
-                        'p31':count[31],'p32':count[32],'MeH':round(score,5),'dis':dis,'depth':depth,'strand':strand}, index=[0])    
+                        'p31':count[31],'p32':count[32],'MeH':round(score,5),'dis':dis,'strand':strand}, index=[0])    
         if w==6:
             opt=pd.DataFrame({'chrom':chrom,'pos':start,'p01':count[1],'p02':count[2],'p03':count[3],'p04':count[4],\
                         'p05':count[5],'p06':count[6],'p07':count[7],'p08':count[8],'p09':count[9],'p10':count[10],\
@@ -336,9 +335,10 @@ def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'):
                         'p46':count[46],'p47':count[47],'p48':count[48],'p49':count[49],'p50':count[50],\
                         'p51':count[51],'p52':count[52],'p53':count[53],'p54':count[54],'p55':count[55],\
                         'p56':count[56],'p57':count[57],'p58':count[58],'p59':count[59],'p60':count[60],\
-                        'p61':count[61],'p62':count[62],'p63':count[63],'p64':count[64],'MeH':round(score,5),'dis':dis,'depth':depth,'strand':strand}, index=[0])    
+                        'p61':count[61],'p62':count[62],'p63':count[63],'p64':count[64],'MeH':round(score,5),'dis':dis,'strand':strand}, index=[0])    
         return out, opt
     else:
+        out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':round(score,5),'dis':dis,'strand':strand}, index=[0])    
         return out
 
 
@@ -380,9 +380,9 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     aggreR = aggreC = pd.DataFrame(columns=['Qname'])
     
     # initialise data frame for output 
-    ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','depth','strand'])
+    ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','strand'])
     if melv:
-        ResML = pd.DataFrame(columns=['chrom','pos','ML','depth','strand'])
+        ResML = pd.DataFrame(columns=['chrom','pos','ML','strand','depth'])
     
     
     # if user wants to output compositions of methylation patterns at every eligible window, initialise data frame
@@ -390,23 +390,23 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
         if w==3:
             Resultopt = pd.DataFrame(columns=\
                         ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08',\
-                         'MeH','dis','depth','strand'])
+                         'MeH','dis','strand'])
         if w==4:
             Resultopt = pd.DataFrame(columns=\
                         ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11',\
-                         'p12','p13','p14','p15','p16','MeH','dis','depth','strand'])
+                         'p12','p13','p14','p15','p16','MeH','dis','strand'])
         if w==5:
             Resultopt = pd.DataFrame(columns=\
                         ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11','p12','p13','p14','p15','p16'\
                         ,'p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28',\
-                        'p29','p30','p31','p32','MeH','dis','depth','strand'])
+                        'p29','p30','p31','p32','MeH','dis','strand'])
         if w==5:
             Resultopt = pd.DataFrame(columns=\
                         ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11','p12','p13','p14','p15','p16'\
                         ,'p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28',\
                         'p29','p30','p31','p32','p33','p34','p35','p36','p37','p38','p39','p40','p41','p42','p43','p44','p45','p46'\
                          ,'p47','p48','p49','p50','p51','p52','p53','p54','p55','p56','p57','p58','p59','p60','p61','p62','p63','p64'\
-                         ,'MeH','dis','depth','strand'])    
+                         ,'MeH','dis','strand'])    
 
     
     neverr = never = True
@@ -699,7 +699,7 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     fastafile = pysam.FastaFile('MeHdata/%s.fa' % fa)
     
     aggreR = aggreC = pd.DataFrame(columns=['Qname'])
-    ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','depth','strand'])
+    ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','strand'])
     if melv:
         ResML = pd.DataFrame(columns=['chrom','pos','ML','depth','strand'])
 
@@ -708,23 +708,23 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
         if w==3:
             Resultopt = pd.DataFrame(columns=\
                         ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08',\
-                         'MeH','dis','depth','strand'])
+                         'MeH','dis','strand'])
         if w==4:
             Resultopt = pd.DataFrame(columns=\
                         ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11',\
-                         'p12','p13','p14','p15','p16','MeH','dis','depth','strand'])
+                         'p12','p13','p14','p15','p16','MeH','dis','strand'])
         if w==5:
             Resultopt = pd.DataFrame(columns=\
                         ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11','p12','p13','p14','p15','p16'\
                         ,'p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28',\
-                        'p29','p30','p31','p32','MeH','dis','depth','strand'])
+                        'p29','p30','p31','p32','MeH','dis','strand'])
         if w==5:
             Resultopt = pd.DataFrame(columns=\
                         ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11','p12','p13','p14','p15','p16'\
                         ,'p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28',\
                         'p29','p30','p31','p32','p33','p34','p35','p36','p37','p38','p39','p40','p41','p42','p43','p44','p45','p46'\
                          ,'p47','p48','p49','p50','p51','p52','p53','p54','p55','p56','p57','p58','p59','p60','p61','p62','p63','p64'\
-                         ,'MeH','dis','depth','strand'])  
+                         ,'MeH','dis','strand'])  
     neverr = never = True
     #chr_lengths = fastafile.get_reference_length(chrom)
     all_pos=np.zeros((2**w,w))
@@ -1001,7 +1001,7 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     fastafile = pysam.FastaFile('MeHdata/%s.fa' % fa)
     coverage = cov_context = 0
     aggreR = aggreC = pd.DataFrame(columns=['Qname'])
-    ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','depth','strand'])
+    ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','strand'])
     if melv:
         ResML = pd.DataFrame(columns=['chrom','pos','ML','depth','strand'])
         
@@ -1009,23 +1009,23 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
         if w==3:
             Resultopt = pd.DataFrame(columns=\
                         ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08',\
-                         'MeH','dis','depth','strand'])
+                         'MeH','dis','strand'])
         if w==4:
             Resultopt = pd.DataFrame(columns=\
                         ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11',\
-                         'p12','p13','p14','p15','p16','MeH','dis','depth','strand'])
+                         'p12','p13','p14','p15','p16','MeH','dis','strand'])
         if w==5:
             Resultopt = pd.DataFrame(columns=\
                         ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11','p12','p13','p14','p15','p16'\
                         ,'p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28',\
-                        'p29','p30','p31','p32','MeH','dis','depth','strand'])
+                        'p29','p30','p31','p32','MeH','dis','strand'])
         if w==5:
             Resultopt = pd.DataFrame(columns=\
                         ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11','p12','p13','p14','p15','p16'\
                         ,'p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28',\
                         'p29','p30','p31','p32','p33','p34','p35','p36','p37','p38','p39','p40','p41','p42','p43','p44','p45','p46'\
                          ,'p47','p48','p49','p50','p51','p52','p53','p54','p55','p56','p57','p58','p59','p60','p61','p62','p63','p64'\
-                         ,'MeH','dis','depth','strand'])    
+                         ,'MeH','dis','strand'])    
 
     neverr = never = True
     #chr_lengths = fastafile.get_reference_length(chrom)
