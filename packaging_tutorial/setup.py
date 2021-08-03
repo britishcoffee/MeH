@@ -15,7 +15,7 @@ setup(
         author_email="<ytchang.sabrina@gmail.com>",
         url="https://github.com/britishcoffee/Methylationhet",
 	license='MIT',
-        packages=['MeHscr'],
+        packages=find_packages('src'),
         description=DESCRIPTION,
         long_description=LONG_DESCRIPTION,
         install_requires=['pysam==0.16.0.1','numpy==1.16.6','pandas==0.24.2','joblib'], # add any additional packages that 
