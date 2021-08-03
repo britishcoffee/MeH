@@ -14,7 +14,7 @@ pip install MeHscr
 ```js
 wget --no-check-certificate --content-disposition https://raw.githubusercontent.com/britishcoffee/Methylationhet/main/genome_scr.py?token=AHGRPBQHJLPQXPOTCTEEZ4LAU5SLK
 curl -LJO https://raw.githubusercontent.com/britishcoffee/Methylationhet/main/genome_scr.py?token=AHGRPBQHJLPQXPOTCTEEZ4LAU5SLK
-wget https://raw.githubusercontent.com/britishcoffee/Methylationhet/main/packaging_tutorial/src/MeHscr/genome_scr.py
+wget https://raw.githubusercontent.com/britishcoffee/MeHscr/main/MeHscr.py
 mv genome_scr.py?token=AHGRPBQHJLPQXPOTCTEEZ4LAU5SLK genome_scr.py
 ```
 ### 2. Open a folder named "MeHdata" under the same directory
@@ -40,13 +40,13 @@ ln -s [directory_to_reference_genome].fa*
 ```ruby
 # 'CG' only with window size of 4 cytosines and 4 cores parallel processing (default score is 
 # pairwise-similarity-based method, default distance between methylation patterns is Hamming distance)
-    python genome_scr.py -w 4 -c 4 --CG
+    python MeHscr.py -w 4 -c 4 --CG
 ```
 
 ```ruby
 # 'CG', 'CHG' and 'CHH' with window size of 4 cytosines, weighted degree kernel for pairwise distances 
 # between methylation patterns and 8 cores parallel processing
-    python genome_scr.py -w 4 -c 8 --CG --CHG --CHH -d 2
+    python MeHscr.py -w 4 -c 8 --CG --CHG --CHH -d 2
 ```
 
 ### 6. Download DHR.R for subsequent analysis
