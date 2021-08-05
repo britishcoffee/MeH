@@ -119,7 +119,12 @@ Comp1$padj=p.adjust(Comp1$pvalue)
 ```
 #### Select differential heterogeneous regions based on user specified conditions; i.e., p-value of 0.05 and delta of 1.4 (positive or negative)
 ```R
-Comp1$DHR <- (Comp1$padj<0.05)*(Comp1$pvalue<0.05)*(abs(Comp1$delta)>1.4)
+
+Comp1$DHR <- (Comp1$padj<0.05)*(abs(Comp1$delta)>1.4)
+Comp1$DHR <- (Comp1$pvalue<0.05)*(abs(Comp1$delta)>1.4)
+Comp1$DHR.up <- (Comp1$pvalue<0.05)*(Comp1$delta>1.4)
+Comp1$DHR.down <- (Comp1$pvalue<0.05)*(Comp1$delta<(-1.4))
+
 ```
 
 <img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image6.png?raw=true" width="450">
