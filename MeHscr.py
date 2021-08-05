@@ -1429,11 +1429,11 @@ if __name__ == "__main__":
                         Toappend = pd.read_csv(toapp_dir)
                         Tomod = Tomod.append(Toappend)
                         Tomod.to_csv(res_dir,index = False, header = True)
-                        os.remove(toapp_dir)
+                        #os.remove(toapp_dir)
                     else:
                         Toappend = pd.read_csv(toapp_dir)
                         Toappend.to_csv(res_dir,index = False,header=True)
-                        os.remove(toapp_dir)
+                        #os.remove(toapp_dir)
 
         #os.chdir('../')
         #os.chdir(outputFolder)
@@ -1807,6 +1807,7 @@ if __name__ == "__main__":
                     Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
                     Toappend.to_csv(res_dir,index = False,header=True)
                     os.remove(toapp_dir)
+                    
         logm("Merging MeH between samples for CHH.")            
         # merge MeH between samples
         for sample in bam_list: 
