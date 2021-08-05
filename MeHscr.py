@@ -28,35 +28,14 @@ def open_log(fname):
     open_log.logfile = open(fname, 'w', 1)
     
 
-def logm(message):
-    log_message = "[%s] %s\n" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), message)
-    print(log_message),
-    open_log.logfile.write(log_message)
+def logm(m):
+    message = "[%s] %s\n" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), m)
+    print(message),
+    open_log.logfile.write(message)
 
 def close_log():
     open_log.logfile.close()
     
-    
-# Count # of windows with enough reads for complete/impute
-def coverage(methbin,complete,w):
-    count=0
-    tot = 0
-    meth=methbin.iloc[:,methbin.columns!='Qname']
-    if len(meth.columns)>=w:
-        for i in range(len(meth.columns)-w+1):
-            # extract a window
-            temp = meth.iloc[:,i:i+w].copy()
-            #print(temp)
-            tot = tot+1
-            if (enough_reads(window=temp,complete=complete,w=w)):
-                count=count+1
-                #toprint=temp.notnull().sum(axis=1)>=w
-                #print(toprint.sum())
-        #print(count)
-        #print(tot)
-        return count/tot*100
-    else: 
-        return 0
 
 # Check whether a window has enough reads for complete/impute
 def enough_reads(window,w,complete):
@@ -96,10 +75,6 @@ def impute(window,w):
 def getcomplete(window,w):
     temp=np.isnan(window).sum(axis=1)==0
     mat=window[np.where(temp)[0],:]
-    #temp=window.notnull().sum(axis=1)>=w
-    #mat=window.iloc[np.where(temp)[0],:]
-    #else:
-    #    temp=mat.notnull().sum(axis=1)>=w-1
     return mat
 
 def PattoDis(mat,dist=1):
@@ -127,69 +102,9 @@ def WDK_d(pat1,pat2):
             d+=s
     return d
 
-# input a window of w CGs and output a list of proportions with starting genomic location and genomic distance across
-def window_summ(pat,start,dis,chrom): 
-    m=np.shape(pat)[0]
-    d=np.shape(pat)[1]
-    all_pos=np.zeros((2**d,d))
-    for i in range(d): 
-        all_pos[:,i]=np.linspace(0,2**d-1,2**d)%(2**(i+1))//(2**i)
-    #print(all_pos)
-    
-    prob=np.zeros((2**d,1))
-    #print(prob)
-    for i in range(2**d): 
-        count = 0
-        for j in range(m):
-            if (all_pos[i,:]==pat.iloc[j,:]).sum()==d:
-                count += 1
-                #print(count)
-        prob[i]=count
-
-
-    if d==3:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
-                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'dis':dis})    
-    if d==4:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
-                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
-                    'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
-                    'p16':prob[15],'dis':dis})   
-    if d==5:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
-                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
-                    'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
-                    'p16':prob[15],'p17':prob[16],'p18':prob[17],'p19':prob[18],'p20':prob[19],\
-                    'p21':prob[20],'p22':prob[21],'p23':prob[22],'p24':prob[23],'p25':prob[24],\
-                    'p26':prob[25],'p27':prob[26],'p28':prob[27],'p29':prob[28],'p30':prob[29],\
-                    'p31':prob[30],'p32':prob[31],'dis':dis})
-    if d==6:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
-                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
-                    'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
-                    'p16':prob[15],'p17':prob[16],'p18':prob[17],'p19':prob[18],'p20':prob[19],\
-                    'p21':prob[20],'p22':prob[21],'p23':prob[22],'p24':prob[23],'p25':prob[24],\
-                    'p26':prob[25],'p27':prob[26],'p28':prob[27],'p29':prob[28],'p30':prob[29],\
-                    'p31':prob[30],'p32':prob[31],'p33':prob[32],'p34':prob[33],'p35':prob[34],\
-                    'p36':prob[35],'p37':prob[36],'p38':prob[37],'p39':prob[38],'p40':prob[39],\
-                    'p41':prob[40],'p42':prob[41],'p43':prob[42],'p44':prob[43],'p45':prob[44],\
-                    'p46':prob[45],'p47':prob[46],'p48':prob[47],'p49':prob[48],'p50':prob[49],\
-                    'p51':prob[50],'p52':prob[51],'p53':prob[52],'p54':prob[53],'p55':prob[54],\
-                    'p56':prob[55],'p57':prob[56],'p58':prob[57],'p59':prob[58],'p60':prob[59],\
-                    'p61':prob[60],'p62':prob[61],'p63':prob[62],'p64':prob[63],'dis':dis})
-    return out
-
-
 def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'): 
     count=np.zeros((2**w,1))
     m=np.shape(pat)[0]
-    #print(count)
-    #for i in range(2**w): 
-    #    c = 0
-    #    for j in range(m):
-    #        if (all_pos[i,:]==pat.iloc[j,:]).sum()==w:
-    #            c += 1
-    #    count[i]=c
     pat=np.array(pat)
     if w==2:
         pat = Counter([str(i[0])+str(i[1]) for i in pat.astype(int).tolist()])
@@ -220,7 +135,6 @@ def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'):
     elif MeH==2: # PWS based
         interaction=np.multiply.outer(count/m,count/m).reshape((2**w,2**w))
         Q=sum(sum(D*interaction))
-        #print("Q =",Q)
         if Q==0:
             score=0
         else:
@@ -230,9 +144,7 @@ def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'):
         count=np.concatenate((count[[0]],count))
         if dist==1 and w==4:
             phylotree=np.append(np.append(np.append(np.append([0],np.repeat(0.5,16)),np.repeat(0.25,6)),[0.5]),np.repeat(0.25,6))
-            #phylotree=np.repeat(0,1).append(np.repeat(0.5,16)).append(np.repeat(0.25,6)).append(0.5).append(np.repeat(0.25,6))
             countn=np.zeros(30)
-            #count<-rep(0,29)
             countn[1:17]=count[[1,9,5,3,2,13,11,10,7,6,4,15,14,12,8,16]]
             countn[17]=countn[4]+countn[7]
             countn[18]=countn[9]+countn[12]
@@ -247,12 +159,9 @@ def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'):
             countn[27]=countn[23]+countn[26]
             countn[28]=countn[11]+countn[14]
             countn[29]=countn[27]+countn[28]
-            #Q=sum(sum(phylotree*count))    
         if dist==2 and w==4: 
             phylotree=np.append(np.append(np.append(np.append([0],np.repeat(3,16)),np.repeat(1.5,6)),[3.2,0.8]),np.repeat(2,3),np.repeat(1.5,2))
-            #phylotree=c(rep(3,16),rep(1.5,6),3.2,0.8,rep(2,3),1.5,1.5)
             countn=np.zeros(30)
-            #print(count)
             countn[1:17]=count[[1,9,5,3,2,13,11,10,7,6,4,15,14,12,8,16]]
             countn[17]=countn[1]+countn[2]
             countn[18]=countn[5]+countn[8]
@@ -267,11 +176,8 @@ def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'):
             countn[27]=countn[25]+countn[26]
             countn[28]=countn[9]+countn[12]
             countn[29]=countn[27]+countn[28]
-            #Q=sum(phylotree*count)
         if dist==2 and w==3:
             phylotree=np.append(np.append(np.append([0],np.repeat(1.5,8)),np.repeat(0.75,3)),np.repeat(1.5,0.75))
-            #phylotree=np.array(0).append(np.repeat(1.5,8)).append(np.repeat(0.75,3)).append(1.5,0.75)
-            #phylotree=c(rep(1.5,8),rep(0.75,3),1.5,0.75)
             countn=np.zeros(14)
             countn[1:9]=count[1:9]
             countn[9]=countn[1]+countn[2]
@@ -279,7 +185,6 @@ def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'):
             countn[11]=countn[3]+countn[4]
             countn[12]=countn[9]+countn[10]
             countn[13]=countn[11]+countn[12]
-            #Q=sum(phylotree*count)
         if dist==1 and w==3:
             phylotree=np.append(np.append(np.append([0],np.repeat(0.5,8)),np.repeat(0.25,3)),[0.5,0.25])
             #phylotree=np.array(0).append(np.repeat(0.5,8)).append(np.repeat(0.25,3)).append(0.5,0.25)
@@ -290,8 +195,6 @@ def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'):
             countn[11]=countn[3]+countn[4]
             countn[12]=countn[9]+countn[10]
             countn[13]=countn[11]+countn[12]
-            #print("count = ",count)
-            #print("phylotree = ",phylotree)
         Q=sum(phylotree*countn)
         score=sum(phylotree*((countn/Q)**2))**(-1)
     elif MeH==4: #Entropy
@@ -362,8 +265,6 @@ def impute(window,w):
             else:
                 s=random.sample(window[np.where(np.invert(np.isnan(window[:,pos])))[0],pos].tolist(), k=1)[0]
             window[part_ind[i],pos]=np.float64(s)
-            #print("win_part i =",window[part_ind[i],pos])
-            #print("s = ",np.float64(s))
     return window 
 
 
@@ -383,7 +284,6 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     ResultPW = pd.DataFrame(columns=['chrom','pos','MeH','dis','strand'])
     if melv:
         ResML = pd.DataFrame(columns=['chrom','pos','ML','strand','depth'])
-    
     
     # if user wants to output compositions of methylation patterns at every eligible window, initialise data frame
     if optional:
