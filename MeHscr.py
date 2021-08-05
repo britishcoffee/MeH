@@ -26,7 +26,6 @@ from collections import Counter, defaultdict, OrderedDict
     
 def open_log(fname):
     open_log.logfile = open(fname, 'w', 1)
-    
 
 def logm(m):
     message = "[%s] %s\n" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), m)
@@ -36,7 +35,6 @@ def logm(m):
 def close_log():
     open_log.logfile.close()
     
-
 # Check whether a window has enough reads for complete/impute
 def enough_reads(window,w,complete):
     temp=np.isnan(window).sum(axis=1)==0
@@ -46,7 +44,6 @@ def enough_reads(window,w,complete):
         tempw1=np.isnan(window).sum(axis=1)==1
         return temp.sum()>=2**(w-2) and tempw1.sum()>0
     
-
 def impute(window,w):
     full_ind=np.where(np.isnan(window).sum(axis=1)==0)[0]
     part_ind=np.where(np.isnan(window).sum(axis=1)==1)[0]
@@ -71,7 +68,6 @@ def impute(window,w):
             #print("s = ",np.float64(s))
     return window 
    
-
 def getcomplete(window,w):
     temp=np.isnan(window).sum(axis=1)==0
     mat=window[np.where(temp)[0],:]
