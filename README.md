@@ -5,9 +5,15 @@
 * pysam package 0.16.0.1 +
 * joblib package
 
-### Can be fulfilled by running
+### Can be fulfilled by running one of the following lines
 ```js
 pip install MeHscr
+pip3 install MeHscr
+```
+or
+```js
+sudo pip install MeHscr
+sudo pip3 install MeHscr
 ```
 ## Methylation heterogeneity profiling
 
