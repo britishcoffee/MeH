@@ -35,28 +35,6 @@ def logm(message):
 
 def close_log():
     open_log.logfile.close()
-    
-    
-# Count # of windows with enough reads for complete/impute
-def coverage(methbin,complete,w):
-    count=0
-    tot = 0
-    meth=methbin.iloc[:,methbin.columns!='Qname']
-    if len(meth.columns)>=w:
-        for i in range(len(meth.columns)-w+1):
-            # extract a window
-            temp = meth.iloc[:,i:i+w].copy()
-            #print(temp)
-            tot = tot+1
-            if (enough_reads(window=temp,complete=complete,w=w)):
-                count=count+1
-                #toprint=temp.notnull().sum(axis=1)>=w
-                #print(toprint.sum())
-        #print(count)
-        #print(tot)
-        return count/tot*100
-    else: 
-        return 0
 
 # Check whether a window has enough reads for complete/impute
 def enough_reads(window,w,complete):
@@ -92,7 +70,6 @@ def impute(window,w):
             #print("s = ",np.float64(s))
     return window 
    
-
 def getcomplete(window,w):
     temp=np.isnan(window).sum(axis=1)==0
     mat=window[np.where(temp)[0],:]
@@ -126,58 +103,6 @@ def WDK_d(pat1,pat2):
             s=(w-i-1)*(1-np.all(pat1[j:j+i+1]==pat2[j:j+i+1]))
             d+=s
     return d
-
-# input a window of w CGs and output a list of proportions with starting genomic location and genomic distance across
-def window_summ(pat,start,dis,chrom): 
-    m=np.shape(pat)[0]
-    d=np.shape(pat)[1]
-    all_pos=np.zeros((2**d,d))
-    for i in range(d): 
-        all_pos[:,i]=np.linspace(0,2**d-1,2**d)%(2**(i+1))//(2**i)
-    #print(all_pos)
-    
-    prob=np.zeros((2**d,1))
-    #print(prob)
-    for i in range(2**d): 
-        count = 0
-        for j in range(m):
-            if (all_pos[i,:]==pat.iloc[j,:]).sum()==d:
-                count += 1
-                #print(count)
-        prob[i]=count
-
-
-    if d==3:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
-                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'dis':dis})    
-    if d==4:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
-                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
-                    'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
-                    'p16':prob[15],'dis':dis})   
-    if d==5:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
-                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
-                    'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
-                    'p16':prob[15],'p17':prob[16],'p18':prob[17],'p19':prob[18],'p20':prob[19],\
-                    'p21':prob[20],'p22':prob[21],'p23':prob[22],'p24':prob[23],'p25':prob[24],\
-                    'p26':prob[25],'p27':prob[26],'p28':prob[27],'p29':prob[28],'p30':prob[29],\
-                    'p31':prob[30],'p32':prob[31],'dis':dis})
-    if d==6:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
-                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
-                    'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
-                    'p16':prob[15],'p17':prob[16],'p18':prob[17],'p19':prob[18],'p20':prob[19],\
-                    'p21':prob[20],'p22':prob[21],'p23':prob[22],'p24':prob[23],'p25':prob[24],\
-                    'p26':prob[25],'p27':prob[26],'p28':prob[27],'p29':prob[28],'p30':prob[29],\
-                    'p31':prob[30],'p32':prob[31],'p33':prob[32],'p34':prob[33],'p35':prob[34],\
-                    'p36':prob[35],'p37':prob[36],'p38':prob[37],'p39':prob[38],'p40':prob[39],\
-                    'p41':prob[40],'p42':prob[41],'p43':prob[42],'p44':prob[43],'p45':prob[44],\
-                    'p46':prob[45],'p47':prob[46],'p48':prob[47],'p49':prob[48],'p50':prob[49],\
-                    'p51':prob[50],'p52':prob[51],'p53':prob[52],'p54':prob[53],'p55':prob[54],\
-                    'p56':prob[55],'p57':prob[56],'p58':prob[57],'p59':prob[58],'p60':prob[59],\
-                    'p61':prob[60],'p62':prob[61],'p63':prob[62],'p64':prob[63],'dis':dis})
-    return out
 
 
 def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'): 
@@ -340,32 +265,6 @@ def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'):
         return out, opt
     else:
         return out
-
-
-def impute(window,w):
-    full_ind=np.where(np.isnan(window).sum(axis=1)==0)[0]
-    part_ind=np.where(np.isnan(window).sum(axis=1)==1)[0]
-    for i in range(len(part_ind)):
-        sam = []
-        # which column is nan
-        pos=np.where(np.isnan(window[part_ind[i],:]))[0]
-        if np.unique(window[np.where(np.invert(np.isnan(window[:,pos])))[0],pos]).shape[0]==1:
-            window[part_ind[i],pos]=window[np.where(np.invert(np.isnan(window[:,pos])))[0],pos][0]
-        else:
-            #print("win_part i pos =",window[part_ind[i],pos])
-            for j in range(len(full_ind)):
-                if (window[part_ind[i],:]==window[full_ind[j],:]).sum()==w-1:
-                    sam.append(j)
-            if len(sam)>0:
-                s1=random.sample(sam, 1)
-                s=window[full_ind[s1],pos]
-            else:
-                s=random.sample(window[np.where(np.invert(np.isnan(window[:,pos])))[0],pos].tolist(), k=1)[0]
-            window[part_ind[i],pos]=np.float64(s)
-            #print("win_part i =",window[part_ind[i],pos])
-            #print("s = ",np.float64(s))
-    return window 
-
 
 def CGgenome_scr(bamfile,chrom,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     filename, file_extension = os.path.splitext(bamfile)
