@@ -1,3 +1,5 @@
+<img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/MeHscr.png?raw=true" width="300">
+
 ## System requirements
 
 * python 2.7 +
