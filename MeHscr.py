@@ -1,7 +1,7 @@
 ##
 #---------------------------------------------------------------------
 # SERVER only input all files (.bam and .fa) output MeH matrix in .csv
-# August 5, 2021 clean
+# August 3, 2021 clean
 # FINAL github
 #---------------------------------------------------------------------
 
@@ -35,6 +35,28 @@ def logm(message):
 
 def close_log():
     open_log.logfile.close()
+    
+    
+# Count # of windows with enough reads for complete/impute
+def coverage(methbin,complete,w):
+    count=0
+    tot = 0
+    meth=methbin.iloc[:,methbin.columns!='Qname']
+    if len(meth.columns)>=w:
+        for i in range(len(meth.columns)-w+1):
+            # extract a window
+            temp = meth.iloc[:,i:i+w].copy()
+            #print(temp)
+            tot = tot+1
+            if (enough_reads(window=temp,complete=complete,w=w)):
+                count=count+1
+                #toprint=temp.notnull().sum(axis=1)>=w
+                #print(toprint.sum())
+        #print(count)
+        #print(tot)
+        return count/tot*100
+    else: 
+        return 0
 
 # Check whether a window has enough reads for complete/impute
 def enough_reads(window,w,complete):
@@ -70,6 +92,7 @@ def impute(window,w):
             #print("s = ",np.float64(s))
     return window 
    
+
 def getcomplete(window,w):
     temp=np.isnan(window).sum(axis=1)==0
     mat=window[np.where(temp)[0],:]
@@ -103,6 +126,58 @@ def WDK_d(pat1,pat2):
             s=(w-i-1)*(1-np.all(pat1[j:j+i+1]==pat2[j:j+i+1]))
             d+=s
     return d
+
+# input a window of w CGs and output a list of proportions with starting genomic location and genomic distance across
+def window_summ(pat,start,dis,chrom): 
+    m=np.shape(pat)[0]
+    d=np.shape(pat)[1]
+    all_pos=np.zeros((2**d,d))
+    for i in range(d): 
+        all_pos[:,i]=np.linspace(0,2**d-1,2**d)%(2**(i+1))//(2**i)
+    #print(all_pos)
+    
+    prob=np.zeros((2**d,1))
+    #print(prob)
+    for i in range(2**d): 
+        count = 0
+        for j in range(m):
+            if (all_pos[i,:]==pat.iloc[j,:]).sum()==d:
+                count += 1
+                #print(count)
+        prob[i]=count
+
+
+    if d==3:
+        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
+                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'dis':dis})    
+    if d==4:
+        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
+                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
+                    'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
+                    'p16':prob[15],'dis':dis})   
+    if d==5:
+        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
+                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
+                    'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
+                    'p16':prob[15],'p17':prob[16],'p18':prob[17],'p19':prob[18],'p20':prob[19],\
+                    'p21':prob[20],'p22':prob[21],'p23':prob[22],'p24':prob[23],'p25':prob[24],\
+                    'p26':prob[25],'p27':prob[26],'p28':prob[27],'p29':prob[28],'p30':prob[29],\
+                    'p31':prob[30],'p32':prob[31],'dis':dis})
+    if d==6:
+        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
+                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
+                    'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
+                    'p16':prob[15],'p17':prob[16],'p18':prob[17],'p19':prob[18],'p20':prob[19],\
+                    'p21':prob[20],'p22':prob[21],'p23':prob[22],'p24':prob[23],'p25':prob[24],\
+                    'p26':prob[25],'p27':prob[26],'p28':prob[27],'p29':prob[28],'p30':prob[29],\
+                    'p31':prob[30],'p32':prob[31],'p33':prob[32],'p34':prob[33],'p35':prob[34],\
+                    'p36':prob[35],'p37':prob[36],'p38':prob[37],'p39':prob[38],'p40':prob[39],\
+                    'p41':prob[40],'p42':prob[41],'p43':prob[42],'p44':prob[43],'p45':prob[44],\
+                    'p46':prob[45],'p47':prob[46],'p48':prob[47],'p49':prob[48],'p50':prob[49],\
+                    'p51':prob[50],'p52':prob[51],'p53':prob[52],'p54':prob[53],'p55':prob[54],\
+                    'p56':prob[55],'p57':prob[56],'p58':prob[57],'p59':prob[58],'p60':prob[59],\
+                    'p61':prob[60],'p62':prob[61],'p63':prob[62],'p64':prob[63],'dis':dis})
+    return out
 
 
 def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'): 
@@ -261,14 +336,40 @@ def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'):
                         'p51':count[51],'p52':count[52],'p53':count[53],'p54':count[54],'p55':count[55],\
                         'p56':count[56],'p57':count[57],'p58':count[58],'p59':count[59],'p60':count[60],\
                         'p61':count[61],'p62':count[62],'p63':count[63],'p64':count[64],'MeH':round(score,5),'dis':dis,'strand':strand}, index=[0])    
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':round(score,5),'dis':dis,'strand':strand}, index=[0])    
         return out, opt
     else:
+        out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':round(score,5),'dis':dis,'strand':strand}, index=[0])    
         return out
 
-def CGgenome_scr(bamfile,chrom,w,fa,optional,melv,silence=False,dist=1,MeH=2):
+
+def impute(window,w):
+    full_ind=np.where(np.isnan(window).sum(axis=1)==0)[0]
+    part_ind=np.where(np.isnan(window).sum(axis=1)==1)[0]
+    for i in range(len(part_ind)):
+        sam = []
+        # which column is nan
+        pos=np.where(np.isnan(window[part_ind[i],:]))[0]
+        if np.unique(window[np.where(np.invert(np.isnan(window[:,pos])))[0],pos]).shape[0]==1:
+            window[part_ind[i],pos]=window[np.where(np.invert(np.isnan(window[:,pos])))[0],pos][0]
+        else:
+            #print("win_part i pos =",window[part_ind[i],pos])
+            for j in range(len(full_ind)):
+                if (window[part_ind[i],:]==window[full_ind[j],:]).sum()==w-1:
+                    sam.append(j)
+            if len(sam)>0:
+                s1=random.sample(sam, 1)
+                s=window[full_ind[s1],pos]
+            else:
+                s=random.sample(window[np.where(np.invert(np.isnan(window[:,pos])))[0],pos].tolist(), k=1)[0]
+            window[part_ind[i],pos]=np.float64(s)
+            #print("win_part i =",window[part_ind[i],pos])
+            #print("s = ",np.float64(s))
+    return window 
+
+
+def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     filename, file_extension = os.path.splitext(bamfile)
-    #sample = str.split(filename,'_')[0]
+    sample = str.split(filename,'_')[0]
     coverage = cov_context = 0
     # load bamfile
     samfile = pysam.AlignmentFile("MeHdata/%s.bam" % (filename), "rb")
@@ -325,7 +426,7 @@ def CGgenome_scr(bamfile,chrom,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     MU=np.zeros((2,w))
     
     # screen bamfile by column
-    for pileupcolumn in samfile.pileup(chrom):
+    for pileupcolumn in samfile.pileup():
         coverage += 1 
         chrom = pileupcolumn.reference_name
         if not silence:
@@ -519,13 +620,13 @@ def CGgenome_scr(bamfile,chrom,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                     ResultPW=ResultPW.append(toappend)
 
                     if ResultPW.shape[0] % 100000 == 1:   
-                        ResultPW.to_csv(r"MeHdata/CG_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                        ResultPW.to_csv(r"MeHdata/CG_%s.csv"%(filename),index = False, header=True)
                         if melv:
-                            ResML.to_csv(r"MeHdata/CG_ML_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                            ResML.to_csv(r"MeHdata/CG_ML_%s.csv"%(filename),index = False, header=True)
                         if optional:
-                            Resultopt.to_csv(r"MeHdata/CG_opt_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                            Resultopt.to_csv(r"MeHdata/CG_opt_%s.csv"%(filename),index = False, header=True)
                         if not silence: 
-                            print("Checkpoint CG. For sample %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
+                            print("Checkpoint CG. For file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
             aggreC = aggreC.drop(meth.columns[0:w],axis=1)
             aggreC.dropna(axis = 0, thresh=2, inplace = True)
             #print(aggreC)
@@ -566,32 +667,32 @@ def CGgenome_scr(bamfile,chrom,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                                         chrom=chrom,D=D,w=w,dist=dist,MeH=MeH,strand='r',optional=optional)
                     ResultPW=ResultPW.append(toappend)
                     if ResultPW.shape[0] % 100000 == 1:   
-                        ResultPW.to_csv(r"MeHdata/CG_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                        ResultPW.to_csv(r"MeHdata/CG_%s.csv"%(filename),index = False, header=True)
                         if melv:
-                            ResML.to_csv(r"MeHdata/CG_ML_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                            ResML.to_csv(r"MeHdata/CG_ML_%s.csv"%(filename),index = False, header=True)
                         if optional:
-                            Resultopt.to_csv(r"MeHdata/CG_opt_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                            Resultopt.to_csv(r"MeHdata/CG_opt_%s.csv"%(filename),index = False, header=True)
                         if not silence: 
-                            print("Checkpoint CG. For sample %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
+                            print("Checkpoint CG. For file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
 
             aggreR = aggreR.drop(meth.columns[0:w],axis=1)
             aggreR.dropna(axis = 0, thresh=2, inplace = True)
             
     if ResultPW.shape[0]>0:   
-        ResultPW.to_csv(r"MeHdata/CG_%s_%s.csv"%(filename,chrom),index = False, header=True)
+        ResultPW.to_csv(r"MeHdata/CG_%s.csv"%(filename),index = False, header=True)
         if optional:
-            Resultopt.to_csv(r"MeHdata/CG_opt_%s_%s.csv"%(filename,chrom),index = False, header=True)
+            Resultopt.to_csv(r"MeHdata/CG_opt_%s.csv"%(filename),index = False, header=True)
         if melv:
-            ResML.to_csv(r"MeHdata/CG_ML_%s_%s.csv"%(filename,chrom),index = False, header=True)
+            ResML.to_csv(r"MeHdata/CG_ML_%s.csv"%(filename),index = False, header=True)
                                
-    return filename, coverage, cov_context, 'CG'        
-    logm("Done CG for file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
-    
+    return sample, coverage, cov_context, 'CG'        
+    print("Done CG for file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
+            
     #samfile.close()  
     
-def CHHgenome_scr(bamfile,chrom,w,fa,optional,melv,silence=False,dist=1,MeH=2):
+def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     filename, file_extension = os.path.splitext(bamfile)
-    #sample = str.split(filename,'_')[0]
+    sample = str.split(filename,'_')[0]
     coverage = cov_context = 0
     #directory = "Outputs/" + str(sample) + '.csv' #original filename of .bams
     samfile = pysam.AlignmentFile("MeHdata/%s.bam" % (filename), "rb")
@@ -635,7 +736,7 @@ def CHHgenome_scr(bamfile,chrom,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     start=datetime.datetime.now()
     MU=np.zeros((2,w))
     
-    for pileupcolumn in samfile.pileup(chrom):
+    for pileupcolumn in samfile.pileup():
         coverage += 1
         chrom = pileupcolumn.reference_name
         if not silence:
@@ -819,13 +920,13 @@ def CHHgenome_scr(bamfile,chrom,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                     ResultPW=ResultPW.append(toappend)
                         
                     if ResultPW.shape[0] % 100000 == 1:   
-                        ResultPW.to_csv(r"MeHdata/CHH_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                        ResultPW.to_csv(r"MeHdata/CHH_%s.csv"%(filename),index = False, header=True)
                         if optional:
-                            Resultopt.to_csv(r"MeHdata/CHH_opt_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                            Resultopt.to_csv(r"MeHdata/CHH_opt_%s.csv"%(filename),index = False, header=True)
                         if melv:
-                            ResML.to_csv(r"MeHdata/CHH_ML_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                            ResML.to_csv(r"MeHdata/CHH_ML_%s.csv"%(filename),index = False, header=True)
                         if not silence: 
-                            print("Checkpoint CHH. For sample %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
+                            print("Checkpoint CHH. For file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
 
             aggreC = aggreC.drop(meth.columns[0:w],axis=1)
             aggreC.dropna(axis = 0, thresh=2, inplace = True)
@@ -870,13 +971,13 @@ def CHHgenome_scr(bamfile,chrom,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                                         chrom=chrom,D=D,w=w,dist=dist,MeH=MeH,strand='r',optional=optional)
                     ResultPW=ResultPW.append(toappend)
                     if ResultPW.shape[0] % 100000 == 1:   
-                        ResultPW.to_csv(r"MeHdata/CHH_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                        ResultPW.to_csv(r"MeHdata/CHH_%s.csv"%(filename),index = False, header=True)
                         if melv:
-                            ResML.to_csv(r"MeHdata/CHH_ML_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                            ResML.to_csv(r"MeHdata/CHH_ML_%s.csv"%(filename),index = False, header=True)
                         if optional:
-                            Resultopt.to_csv(r"MeHdata/CHH_opt_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                            Resultopt.to_csv(r"MeHdata/CHH_opt_%s.csv"%(filename),index = False, header=True)
                         if not silence: 
-                            print("Checkpoint CHH. For sample %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
+                            print("Checkpoint CHH. For file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
 
             aggreR = aggreR.drop(meth.columns[0:w],axis=1)
             aggreR.dropna(axis = 0, thresh=2, inplace = True)
@@ -884,16 +985,18 @@ def CHHgenome_scr(bamfile,chrom,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             #total += w 
             
     if ResultPW.shape[0]>0:   
-        ResultPW.to_csv(r"MeHdata/CHH_%s_%s.csv"%(filename,chrom),index = False, header=True)
+        ResultPW.to_csv(r"MeHdata/CHH_%s.csv"%(filename),index = False, header=True)
         if melv:
-            ResML.to_csv(r"MeHdata/CHH_ML_%s_%s.csv"%(filename,chrom),index = False, header=True)
+            ResML.to_csv(r"MeHdata/CHH_ML_%s.csv"%(filename),index = False, header=True)
         if optional:
-            Resultopt.to_csv(r"MeHdata/CHH_opt_%s_%s.csv"%(filename,chrom),index = False, header=True)
-    return filename, coverage, cov_context, 'CHH'                        
-    logm("Done CHH for file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
+            Resultopt.to_csv(r"MeHdata/CHH_opt_%s.csv"%(filename),index = False, header=True)
+    return sample, coverage, cov_context, 'CHH'                        
+    print("Done CHH for file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
             
-def CHGgenome_scr(bamfile,chrom,w,fa,optional,melv,silence=False,dist=1,MeH=2):
+def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     filename, file_extension = os.path.splitext(bamfile)
+    sample = str.split(filename,'_')[0]
+    #directory = "Outputs/" + str(sample) + '.csv' #original filename of .bams
     samfile = pysam.AlignmentFile("MeHdata/%s.bam" % (filename), "rb")
     fastafile = pysam.FastaFile('MeHdata/%s.fa' % fa)
     coverage = cov_context = 0
@@ -934,7 +1037,7 @@ def CHGgenome_scr(bamfile,chrom,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     MU=np.zeros((2,w))
     start=datetime.datetime.now()
     
-    for pileupcolumn in samfile.pileup(chrom):
+    for pileupcolumn in samfile.pileup():
         coverage += 1
         chrom = pileupcolumn.reference_name
         if not silence:
@@ -1115,13 +1218,13 @@ def CHGgenome_scr(bamfile,chrom,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                     ResultPW=ResultPW.append(toappend)
 
                     if ResultPW.shape[0] % 100000 == 1:   
-                        ResultPW.to_csv(r"MeHdata/CHG_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                        ResultPW.to_csv(r"MeHdata/CHG_%s.csv"%(filename),index = False, header=True)
                         if optional:
-                            Resultopt.to_csv(r"MeHdata/CHG_opt_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                            Resultopt.to_csv(r"MeHdata/CHG_opt_%s.csv"%(filename),index = False, header=True)
                         if melv:
-                            ResML.to_csv(r"MeHdata/CHG_ML_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                            ResML.to_csv(r"MeHdata/CHG_ML_%s.csv"%(filename),index = False, header=True)
                         if not silence: 
-                            print("Checkpoint CHG. For sample %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
+                            print("Checkpoint CHG. For file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
 
             aggreC = aggreC.drop(meth.columns[0:w],axis=1)
             aggreC.dropna(axis = 0, thresh=2, inplace = True)
@@ -1163,26 +1266,26 @@ def CHGgenome_scr(bamfile,chrom,w,fa,optional,melv,silence=False,dist=1,MeH=2):
                     ResultPW=ResultPW.append(toappend)
 
                     if ResultPW.shape[0] % 100000 == 1:   
-                        ResultPW.to_csv(r"MeHdata/CHG_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                        ResultPW.to_csv(r"MeHdata/CHG_%s.csv"%(filename),index = False, header=True)
                         if optional:
-                            Resultopt.to_csv(r"MeHdata/CHG_opt_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                            Resultopt.to_csv(r"MeHdata/CHG_opt_%s.csv"%(filename),index = False, header=True)
                         if melv:
-                            ResML.to_csv(r"MeHdata/CHG_ML_%s_%s.csv"%(filename,chrom),index = False, header=True)
+                            ResML.to_csv(r"MeHdata/CHG_ML_%s.csv"%(filename),index = False, header=True)
                         if not silence: 
-                            print("Checkpoint CHG. For sample %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos+1))
+                            print("Checkpoint CHG. For file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos+1))
 
             aggreR = aggreR.drop(meth.columns[0:w],axis=1)
             aggreR.dropna(axis = 0, thresh=2, inplace = True) 
             
     if ResultPW.shape[0]>0:   
-        ResultPW.to_csv(r"MeHdata/CHG_%s_%s.csv"%(filename,chrom),index = False, header=True)
+        ResultPW.to_csv(r"MeHdata/CHG_%s.csv"%(filename),index = False, header=True)
         if melv:
-            ResML.to_csv(r"MeHdata/CHG_ML_%s_%s.csv"%(filename,chrom),index = False, header=True)
+            ResML.to_csv(r"MeHdata/CHG_ML_%s.csv"%(filename),index = False, header=True)
         if optional:
-            Resultopt.to_csv(r"MeHdata/CHG_opt_%s_%s.csv"%(filename,chrom),index = False, header=True)
+            Resultopt.to_csv(r"MeHdata/CHG_opt_%s.csv"%(filename),index = False, header=True)
                             
-    return filename, coverage, cov_context, 'CHG'
-    logm("Done CHG for file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos+1))
+    return sample, coverage, cov_context, 'CHG'
+    print("Done CHG for file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos+1))
             
         
 def split_bam(samplenames,Folder): 
@@ -1219,7 +1322,7 @@ def split_bam(samplenames,Folder):
     pysam.index(fileout)
 
 
-
+    
 
 import argparse
 parser = argparse.ArgumentParser()
@@ -1262,32 +1365,39 @@ if __name__ == "__main__":
             fa = filename
         if file_extension == '.bam':
             bam_list.append(filename)
-            
-    #Parallel(n_jobs=args.cores)(delayed(split_bam)(bamfile,Folder=Folder) for bamfile in bam_list)
     
-    fastafile = pysam.FastaFile('%s%s.fa' % (Folder,fa)) 
-    chromosomes=[]
-    for chrom in fastafile.references:
-        chromosomes.append(chrom)
-    fastafile.close()    
-
+    #if 'cores' in args: 
+    #    num_cores = args.cores
+    #else:
+    #    num_cores = 4
+        
+    Parallel(n_jobs=args.cores)(delayed(split_bam)(bamfile,Folder=Folder) for bamfile in bam_list)
+    
+    spbam_list = []
+    tempfiles = os.listdir(Folder)
+    for file in tempfiles:
+        filename, file_extension = os.path.splitext(file)
+        if file_extension=='.bam' and filename not in bam_list:
+            spbam_list.append(filename)
+    #print(spbam_list)
+    
     topp = pd.DataFrame(columns=['sample','coverage','context_coverage','context'])    
     #CG = []
     #start=t.time()
     if args.CG:
         con='CG'
-        CG=Parallel(n_jobs=args.cores)(delayed(CGgenome_scr)(bam,chrom=c,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bam in bam_list for c in chromosomes)
+        CG=Parallel(n_jobs=args.cores)(delayed(CGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
         
         logm("Merging MeH within samples for CG.")
         # merge MeH within sample
-        for file in bam_list:
-            print("Merging within sample",file,"...")
-            for c in chromosomes:
-                #res_dir = Folder + con + '_' + str(sample) + '.csv'
-                res_dir = Folder + con + '_' + file + '.csv'
-                #toapp_dir = Folder + con + '_' + file + '.csv'
-                toapp_dir = Folder + con + '_' + file + '_' + c + '.csv'
-                if os.path.exists(res_dir) and os.path.exists(toapp_dir):
+        for file in spbam_list:
+            filename, file_extension = os.path.splitext(file)
+            sample = str.split(file,'_')[0]
+            print("Merging within sample",sample,"...")
+            if not sample == filename:
+                res_dir = Folder + con + '_' + str(sample) + '.csv'
+                toapp_dir = Folder + con + '_' + file + '.csv'
+                if os.path.exists(res_dir):
                     Tomod = pd.read_csv(res_dir) 
                     Toappend = pd.read_csv(toapp_dir)
                     Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
@@ -1297,7 +1407,7 @@ if __name__ == "__main__":
                     Tomod = Tomod.append(Toappend)
                     Tomod.to_csv(res_dir,index = False,header=True)
                     #os.remove(toapp_dir)
-                elif os.path.exists(toapp_dir):
+                else:
                     Toappend = pd.read_csv(toapp_dir)
                     Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
                     Toappend=Toappend.drop(columns=['pos'])
@@ -1307,20 +1417,23 @@ if __name__ == "__main__":
                     
         # not into bins of 400bp
         if args.opt:
-            for file in bam_list:
-                for c in chromosomes:
-                    res_dir = Folder + con + '_opt_' + file + '.csv'
-                    toapp_dir = Folder + con + '_opt_' + file + '_' + c + '.csv'
-                    if os.path.exists(res_dir) and os.path.exists(toapp_dir):
+            for file in spbam_list:
+                filename, file_extension = os.path.splitext(file)
+                sample = str.split(file,'_')[0]
+                #print("sample = ",sample)
+                if not sample == filename:
+                    res_dir = Folder + con + '_opt_' + str(sample) + '.csv'
+                    toapp_dir = Folder + con + '_opt_' +file + '.csv'
+                    if os.path.exists(res_dir):
                         Tomod = pd.read_csv(res_dir) 
                         Toappend = pd.read_csv(toapp_dir)
                         Tomod = Tomod.append(Toappend)
                         Tomod.to_csv(res_dir,index = False, header = True)
-                        os.remove(toapp_dir)
-                    elif os.path.exists(toapp_dir):
+                        #os.remove(toapp_dir)
+                    else:
                         Toappend = pd.read_csv(toapp_dir)
                         Toappend.to_csv(res_dir,index = False,header=True)
-                        os.remove(toapp_dir)
+                        #os.remove(toapp_dir)
 
         #os.chdir('../')
         #os.chdir(outputFolder)
@@ -1328,62 +1441,61 @@ if __name__ == "__main__":
         logm("Merging ML within samples for CG.")
         # append ML within samples
         if args.mlv:
-            for sample in bam_list:
-                file, file_extension = os.path.splitext(sample)
-                for c in chromosomes:
-                    #sample = str.split(file,'_')[0]
-                    res_dir = Folder + con + '_ML_' + file + '.csv'
-                    toapp_dir = Folder + con + '_ML_' + file + '_' + c + '.csv'
-                    if os.path.exists(res_dir) and os.path.exists(toapp_dir):
-                        Tomod = pd.read_csv(res_dir) 
-                        Toappend = pd.read_csv(toapp_dir)
-                        Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
-                        Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
-                        #Count=Count.drop_duplicates()
-                        #print(Count)
-                        Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
-                        conditions = [
-                            (Toappend['counts'] > 4),
-                            (Toappend['counts'] < 5) 
-                        ]
-                        # create a list of the values we want to assign for each condition
-                        values = [Toappend['ML'], np.nan]
+            for file in spbam_list:
+                filename, file_extension = os.path.splitext(file)
+                sample = str.split(file,'_')[0]
+                res_dir = Folder + con + '_ML_' + str(sample) + '.csv'
+                toapp_dir = Folder + con + '_ML_' + file + '.csv'
+                if os.path.exists(res_dir):
+                    Tomod = pd.read_csv(res_dir) 
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
+                    #Count=Count.drop_duplicates()
+                    #print(Count)
+                    Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
+                    conditions = [
+                        (Toappend['counts'] > 4),
+                        (Toappend['counts'] < 5) 
+                    ]
+                    # create a list of the values we want to assign for each condition
+                    values = [Toappend['ML'], np.nan]
 
-                        # create a new column and use np.select to assign values to it using our lists as arguments
-                        Toappend['ML'] = np.select(conditions, values)
-                        Toappend=Toappend.drop(columns=['counts','pos'])
-                        #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
-                        Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
-                        Tomod = Tomod.append(Toappend)
-                        Tomod.to_csv(res_dir,index = False,header=True)
-                        #os.remove(toapp_dir)
-                    elif os.path.exists(toapp_dir):
-                        Toappend = pd.read_csv(toapp_dir)
-                        Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
-                        Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
-                        Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
-                        #print(Toappend)
-                        conditions = [
-                            (Toappend['counts'] > 4),
-                            (Toappend['counts'] < 5) 
-                        ]
-                        # create a list of the values we want to assign for each condition
-                        values = [Toappend['ML'], np.nan]
+                    # create a new column and use np.select to assign values to it using our lists as arguments
+                    Toappend['ML'] = np.select(conditions, values)
+                    Toappend=Toappend.drop(columns=['counts','pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
+                    Tomod = Tomod.append(Toappend)
+                    Tomod.to_csv(res_dir,index = False,header=True)
+                    #os.remove(toapp_dir)
+                else:
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
+                    Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
+                    #print(Toappend)
+                    conditions = [
+                        (Toappend['counts'] > 4),
+                        (Toappend['counts'] < 5) 
+                    ]
+                    # create a list of the values we want to assign for each condition
+                    values = [Toappend['ML'], np.nan]
 
-                        # create a new column and use np.select to assign values to it using our lists as arguments
-                        Toappend['ML'] = np.select(conditions, values)
-                        Toappend=Toappend.drop(columns=['counts','pos'])
-                        #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
-                        Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
-                        Toappend.to_csv(res_dir,index = False,header=True)
-                        #os.remove(toapp_dir)
+                    # create a new column and use np.select to assign values to it using our lists as arguments
+                    Toappend['ML'] = np.select(conditions, values)
+                    Toappend=Toappend.drop(columns=['counts','pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
+                    Toappend.to_csv(res_dir,index = False,header=True)
+                    #os.remove(toapp_dir)
         logm("Merging ML between samples for CG.")
         # merge ML between samples
         if args.mlv:
             for sample in bam_list: 
                 tomerge_dir = Folder +  con + '_ML_' + str(sample) + '.csv' 
                 res_dir = Folder +  con + '_ML_' + 'Results.csv'
-                if os.path.exists(res_dir) and os.path.exists(tomerge_dir):
+                if os.path.exists(res_dir):
                     Result = pd.read_csv(res_dir) 
                     Tomerge = pd.read_csv(tomerge_dir)
                     Tomerge.dropna(axis = 0, thresh=4, inplace = True)
@@ -1392,7 +1504,7 @@ if __name__ == "__main__":
                     Result.dropna(axis = 0, thresh=4, inplace = True) 
                     Result.to_csv(res_dir,index = False,header=True)
                     os.remove(tomerge_dir)
-                elif os.path.exists(tomerge_dir):
+                else:
                     Result = pd.read_csv(tomerge_dir)
                     Result = Result.rename(columns={'ML': sample})
                     #Result = Result.drop(columns=['counts','pos','depth','dis'])
@@ -1404,7 +1516,7 @@ if __name__ == "__main__":
         for sample in bam_list: 
             tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
             res_dir = Folder +  con + '_' + 'Results.csv'
-            if os.path.exists(res_dir) and os.path.exists(tomerge_dir):
+            if os.path.exists(res_dir):
                 Result = pd.read_csv(res_dir)
                 Tomerge = pd.read_csv(tomerge_dir)
                 #Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
@@ -1414,7 +1526,7 @@ if __name__ == "__main__":
                 Result.dropna(axis = 0, thresh=4, inplace = True) 
                 Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
                 os.remove(tomerge_dir)
-            elif os.path.exists(tomerge_dir):
+            else:
                 Result = pd.read_csv(tomerge_dir)
                 Result.head()
                 #Result = Result.drop(columns=['dis','ML','depth'])
@@ -1425,6 +1537,7 @@ if __name__ == "__main__":
 
 
         Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
+        print("All done.",len(bam_list),"bam files processed and merged for CG.")
         logm("All done. "+str(len(bam_list))+" bam files processed and merged for CG.")
         for i in CG:
             toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_coverage':i[2],'context':i[3]},index=[0])
@@ -1434,17 +1547,17 @@ if __name__ == "__main__":
           
     if args.CHG:
         con='CHG'
-        CG=Parallel(n_jobs=args.cores)(delayed(CHGgenome_scr)(bam,chrom=c,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bam in bam_list for c in chromosomes)
+        CG=Parallel(n_jobs=args.cores)(delayed(CHGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
         
         logm("Merging MeH within samples for CHG.")  
-        for file in bam_list:
-            print("Merging within sample",file,"...")
-            for c in chromosomes:
-                #res_dir = Folder + con + '_' + str(sample) + '.csv'
-                res_dir = Folder + con + '_' + file + '.csv'
-                #toapp_dir = Folder + con + '_' + file + '.csv'
-                toapp_dir = Folder + con + '_' + file + '_' + c + '.csv'
-                if os.path.exists(res_dir) and os.path.exists(toapp_dir):
+        for file in spbam_list:
+            filename, file_extension = os.path.splitext(file)
+            sample = str.split(file,'_')[0]
+            print("Merging within sample",sample,"...")
+            if not sample == filename:
+                res_dir = Folder + con + '_' + str(sample) + '.csv'
+                toapp_dir = Folder + con + '_' + file + '.csv'
+                if os.path.exists(res_dir):
                     Tomod = pd.read_csv(res_dir) 
                     Toappend = pd.read_csv(toapp_dir)
                     Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
@@ -1454,7 +1567,7 @@ if __name__ == "__main__":
                     Tomod = Tomod.append(Toappend)
                     Tomod.to_csv(res_dir,index = False,header=True)
                     #os.remove(toapp_dir)
-                elif os.path.exists(toapp_dir):
+                else:
                     Toappend = pd.read_csv(toapp_dir)
                     Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
                     Toappend=Toappend.drop(columns=['pos'])
@@ -1464,80 +1577,84 @@ if __name__ == "__main__":
                     
         # not into bins of 400bp
         if args.opt:
-            for file in bam_list:
-                for c in chromosomes:
-                    res_dir = Folder + con + '_opt_' + file + '.csv'
-                    toapp_dir = Folder + con + '_opt_' + file + '_' + c + '.csv'
-                    if os.path.exists(res_dir) and os.path.exists(toapp_dir):
+            for file in spbam_list:
+                filename, file_extension = os.path.splitext(file)
+                sample = str.split(file,'_')[0]
+                #print("sample = ",sample)
+                if not sample == filename:
+                    res_dir = Folder + con + '_opt_' + str(sample) + '.csv'
+                    toapp_dir = Folder + con + '_opt_' +file + '.csv'
+                    if os.path.exists(res_dir):
                         Tomod = pd.read_csv(res_dir) 
                         Toappend = pd.read_csv(toapp_dir)
                         Tomod = Tomod.append(Toappend)
-                        Tomod.to_csv(res_dir,index = False, header = True)
+                        Tomod.to_csv(res_dir,index = False,header=True)
                         os.remove(toapp_dir)
-                    elif os.path.exists(toapp_dir):
+                    else:
                         Toappend = pd.read_csv(toapp_dir)
                         Toappend.to_csv(res_dir,index = False,header=True)
                         os.remove(toapp_dir)
-
 
         #os.chdir('../')
         #os.chdir(outputFolder)
         logm("Merging ML within samples for CHG.")    
         # append ML within samples
         if args.mlv:
-            for file in bam_list:
-                for c in chromosomes:
-                    res_dir = Folder + con + '_ML_' + file + '.csv'
-                    toapp_dir = Folder + con + '_ML_' + file + '_' + c + '.csv'
-                    if os.path.exists(res_dir) and os.path.exists(toapp_dir):
-                        Tomod = pd.read_csv(res_dir) 
-                        Toappend = pd.read_csv(toapp_dir)
-                        Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
-                        Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
-                        
-                        Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
-                        conditions = [
-                            (Toappend['counts'] > 4),
-                            (Toappend['counts'] < 5) 
-                        ]
-                        # create a list of the values we want to assign for each condition
-                        values = [Toappend['ML'], np.nan]
+            for file in spbam_list:
+                filename, file_extension = os.path.splitext(file)
+                sample = str.split(file,'_')[0]
+                res_dir = Folder + con + '_ML_' + str(sample) + '.csv'
+                toapp_dir = Folder + con + '_ML_' + file + '.csv'
+                if os.path.exists(res_dir):
+                    Tomod = pd.read_csv(res_dir) 
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
+                    #Count=Count.drop_duplicates()
+                    #print(Count)
+                    Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
+                    conditions = [
+                        (Toappend['counts'] > 4),
+                        (Toappend['counts'] < 5) 
+                    ]
+                    # create a list of the values we want to assign for each condition
+                    values = [Toappend['ML'], np.nan]
 
-                        # create a new column and use np.select to assign values to it using our lists as arguments
-                        Toappend['ML'] = np.select(conditions, values)
-                        Toappend=Toappend.drop(columns=['counts','pos'])
-                        #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
-                        Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
-                        Tomod = Tomod.append(Toappend)
-                        Tomod.to_csv(res_dir,index = False,header=True)
-                        os.remove(toapp_dir)
-                    elif os.path.exists(toapp_dir):
-                        Toappend = pd.read_csv(toapp_dir)
-                        Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
-                        Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
-                        Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
-                        #print(Toappend)
-                        conditions = [
-                            (Toappend['counts'] > 4),
-                            (Toappend['counts'] < 5) 
-                        ]
-                        # create a list of the values we want to assign for each condition
-                        values = [Toappend['ML'], np.nan]
+                    # create a new column and use np.select to assign values to it using our lists as arguments
+                    Toappend['ML'] = np.select(conditions, values)
+                    Toappend=Toappend.drop(columns=['counts','pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
+                    Tomod = Tomod.append(Toappend)
+                    Tomod.to_csv(res_dir,index = False,header=True)
+                    os.remove(toapp_dir)
+                else:
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
+                    Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
+                    #print(Toappend)
+                    conditions = [
+                        (Toappend['counts'] > 4),
+                        (Toappend['counts'] < 5) 
+                    ]
+                    # create a list of the values we want to assign for each condition
+                    values = [Toappend['ML'], np.nan]
 
-                        # create a new column and use np.select to assign values to it using our lists as arguments
-                        Toappend['ML'] = np.select(conditions, values)
-                        Toappend=Toappend.drop(columns=['counts','pos'])
-                        #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
-                        Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
-                        Toappend.to_csv(res_dir,index = False,header=True)
-                        os.remove(toapp_dir)
-
+                    # create a new column and use np.select to assign values to it using our lists as arguments
+                    Toappend['ML'] = np.select(conditions, values)
+                    Toappend=Toappend.drop(columns=['counts','pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
+                    Toappend.to_csv(res_dir,index = False,header=True)
+                    os.remove(toapp_dir)
+        
         logm("Merging MeH between samples for CHG.")            
         # merge MeH between samples
         for sample in bam_list: 
             tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
             res_dir = Folder +  con + '_' + 'Results.csv'
-            if os.path.exists(res_dir) and os.path.exists(tomerge_dir):
+            if os.path.exists(res_dir):
                 Result = pd.read_csv(res_dir)
                 Tomerge = pd.read_csv(tomerge_dir)
                 #Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
@@ -1547,8 +1664,9 @@ if __name__ == "__main__":
                 Result.dropna(axis = 0, thresh=4, inplace = True) 
                 Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
                 os.remove(tomerge_dir)
-            elif os.path.exists(tomerge_dir):
+            else:
                 Result = pd.read_csv(tomerge_dir)
+                Result.head()
                 #Result = Result.drop(columns=['dis','ML','depth'])
                 #Result.dropna(axis = 0, thresh=4, inplace = True)
                 Result = Result.rename(columns={'MeH': sample})
@@ -1561,7 +1679,7 @@ if __name__ == "__main__":
             for sample in bam_list: 
                 tomerge_dir = Folder +  con + '_ML_' + str(sample) + '.csv' 
                 res_dir = Folder +  con + '_ML_' + 'Results.csv'
-                if os.path.exists(res_dir) and os.path.exists(tomerge_dir):
+                if os.path.exists(res_dir):
                     Result = pd.read_csv(res_dir) 
                     Tomerge = pd.read_csv(tomerge_dir)
                     Tomerge.dropna(axis = 0, thresh=4, inplace = True)
@@ -1570,9 +1688,10 @@ if __name__ == "__main__":
                     Result.dropna(axis = 0, thresh=4, inplace = True) 
                     Result.to_csv(res_dir,index = False,header=True)
                     os.remove(tomerge_dir)
-                elif os.path.exists(tomerge_dir):
+                else:
                     Result = pd.read_csv(tomerge_dir)
                     Result = Result.rename(columns={'ML': sample})
+                    #Result = Result.drop(columns=['counts','pos','depth','dis'])
                     Result.dropna(axis = 0, thresh=4, inplace = True)
                     Result.to_csv(res_dir,index = False,header=True)
                     os.remove(tomerge_dir)
@@ -1588,18 +1707,18 @@ if __name__ == "__main__":
         
     if args.CHH:
         con='CHH'
-        CG=Parallel(n_jobs=args.cores)(delayed(CHHgenome_scr)(bam,chrom=c,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bam in bam_list for c in chromosomes)
-
+        CG=Parallel(n_jobs=args.cores)(delayed(CHHgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
+    
         logm("Merging MeH within samples for CHH.")
         # merge MeH within sample
-        for file in bam_list:
-            print("Merging within sample",file,"...")
-            for c in chromosomes:
-                #res_dir = Folder + con + '_' + str(sample) + '.csv'
-                res_dir = Folder + con + '_' + file + '.csv'
-                #toapp_dir = Folder + con + '_' + file + '.csv'
-                toapp_dir = Folder + con + '_' + file + '_' + c + '.csv'
-                if os.path.exists(res_dir) and os.path.exists(toapp_dir):
+        for file in spbam_list:
+            filename, file_extension = os.path.splitext(file)
+            sample = str.split(file,'_')[0]
+            print("Merging within sample",sample,"...")
+            if not sample == filename:
+                res_dir = Folder + con + '_' + str(sample) + '.csv'
+                toapp_dir = Folder + con + '_' + file + '.csv'
+                if os.path.exists(res_dir):
                     Tomod = pd.read_csv(res_dir) 
                     Toappend = pd.read_csv(toapp_dir)
                     Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
@@ -1609,7 +1728,7 @@ if __name__ == "__main__":
                     Tomod = Tomod.append(Toappend)
                     Tomod.to_csv(res_dir,index = False,header=True)
                     #os.remove(toapp_dir)
-                elif os.path.exists(toapp_dir):
+                else:
                     Toappend = pd.read_csv(toapp_dir)
                     Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
                     Toappend=Toappend.drop(columns=['pos'])
@@ -1619,17 +1738,20 @@ if __name__ == "__main__":
                     
         # not into bins of 400bp
         if args.opt:
-            for file in bam_list:
-                for c in chromosomes:
-                    res_dir = Folder + con + '_opt_' + file + '.csv'
-                    toapp_dir = Folder + con + '_opt_' + file + '_' + c + '.csv'
-                    if os.path.exists(res_dir) and os.path.exists(toapp_dir):
+            for file in spbam_list:
+                filename, file_extension = os.path.splitext(file)
+                sample = str.split(file,'_')[0]
+                print("sample = ",sample)
+                if not sample == filename:
+                    res_dir = Folder + con + '_opt_' + str(sample) + '.csv'
+                    toapp_dir = Folder + con + '_opt_' +file + '.csv'
+                    if os.path.exists(res_dir):
                         Tomod = pd.read_csv(res_dir) 
                         Toappend = pd.read_csv(toapp_dir)
                         Tomod = Tomod.append(Toappend)
                         Tomod.to_csv(res_dir,index = False,header=True)
                         os.remove(toapp_dir)
-                    elif os.path.exists(toapp_dir):
+                    else:
                         Toappend = pd.read_csv(toapp_dir)
                         Toappend.to_csv(res_dir,index = False,header=True)
                         os.remove(toapp_dir)
@@ -1637,59 +1759,61 @@ if __name__ == "__main__":
         logm("Merging ML within samples for CHH.")
         # append ML within samples
         if args.mlv:
-            for file in bam_list:
-                for c in chromosomes:
-                    #filename, file_extension = os.path.splitext(file)
-                    #sample = str.split(file,'_')[0]
-                    res_dir = Folder + con + '_ML_' + file + '.csv'
-                    toapp_dir = Folder + con + '_ML_' + file + '_' + c + '.csv'
-                    if os.path.exists(res_dir) and os.path.exists(toapp_dir):
-                        Tomod = pd.read_csv(res_dir) 
-                        Toappend = pd.read_csv(toapp_dir)
-                        Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
-                        Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
-                        #Count=Count.drop_duplicates()
-                        #print(Count)
-                        Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
-                        conditions = [
-                            (Toappend['counts'] > 4),
-                            (Toappend['counts'] < 5) 
-                        ]
-                        # create a list of the values we want to assign for each condition
-                        values = [Toappend['ML'], np.nan]
-                        # create a new column and use np.select to assign values to it using our lists as arguments
-                        Toappend['ML'] = np.select(conditions, values)
-                        Toappend=Toappend.drop(columns=['counts','pos'])
-                        #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
-                        Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
-                        Tomod = Tomod.append(Toappend)
-                        Tomod.to_csv(res_dir,index = False,header=True)
-                        os.remove(toapp_dir)
-                    elif os.path.exists(toapp_dir):
-                        Toappend = pd.read_csv(toapp_dir)
-                        Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
-                        Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
-                        Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
-                        #print(Toappend)
-                        conditions = [
-                            (Toappend['counts'] > 4),
-                            (Toappend['counts'] < 5) 
-                        ]
-                        # create a list of the values we want to assign for each condition
-                        values = [Toappend['ML'], np.nan]
-                        # create a new column and use np.select to assign values to it using our lists as arguments
-                        Toappend['ML'] = np.select(conditions, values)
-                        Toappend=Toappend.drop(columns=['counts','pos'])
-                        #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
-                        Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
-                        Toappend.to_csv(res_dir,index = False,header=True)
-                        os.remove(toapp_dir)
+            for file in spbam_list:
+                filename, file_extension = os.path.splitext(file)
+                sample = str.split(file,'_')[0]
+                res_dir = Folder + con + '_ML_' + str(sample) + '.csv'
+                toapp_dir = Folder + con + '_ML_' + file + '.csv'
+                if os.path.exists(res_dir):
+                    Tomod = pd.read_csv(res_dir) 
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
+                    #Count=Count.drop_duplicates()
+                    #print(Count)
+                    Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
+                    conditions = [
+                        (Toappend['counts'] > 4),
+                        (Toappend['counts'] < 5) 
+                    ]
+                    # create a list of the values we want to assign for each condition
+                    values = [Toappend['ML'], np.nan]
+
+                    # create a new column and use np.select to assign values to it using our lists as arguments
+                    Toappend['ML'] = np.select(conditions, values)
+                    Toappend=Toappend.drop(columns=['counts','pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
+                    Tomod = Tomod.append(Toappend)
+                    Tomod.to_csv(res_dir,index = False,header=True)
+                    os.remove(toapp_dir)
+                else:
+                    Toappend = pd.read_csv(toapp_dir)
+                    Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
+                    Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
+                    Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
+                    #print(Toappend)
+                    conditions = [
+                        (Toappend['counts'] > 4),
+                        (Toappend['counts'] < 5) 
+                    ]
+                    # create a list of the values we want to assign for each condition
+                    values = [Toappend['ML'], np.nan]
+
+                    # create a new column and use np.select to assign values to it using our lists as arguments
+                    Toappend['ML'] = np.select(conditions, values)
+                    Toappend=Toappend.drop(columns=['counts','pos'])
+                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
+                    Toappend.to_csv(res_dir,index = False,header=True)
+                    os.remove(toapp_dir)
+                    
         logm("Merging MeH between samples for CHH.")            
         # merge MeH between samples
         for sample in bam_list: 
             tomerge_dir = Folder +  con + '_' + str(sample) + '.csv' 
             res_dir = Folder +  con + '_' + 'Results.csv'
-            if os.path.exists(res_dir) and os.path.exists(tomerge_dir):
+            if os.path.exists(res_dir):
                 Result = pd.read_csv(res_dir)
                 Tomerge = pd.read_csv(tomerge_dir)
                 #Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
@@ -1699,8 +1823,9 @@ if __name__ == "__main__":
                 Result.dropna(axis = 0, thresh=4, inplace = True) 
                 Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
                 os.remove(tomerge_dir)
-            elif os.path.exists(tomerge_dir):
+            else:
                 Result = pd.read_csv(tomerge_dir)
+                Result.head()
                 #Result = Result.drop(columns=['dis','ML','depth'])
                 Result.dropna(axis = 0, thresh=4, inplace = True)
                 Result = Result.rename(columns={'MeH': sample})
@@ -1712,7 +1837,7 @@ if __name__ == "__main__":
             for sample in bam_list: 
                 tomerge_dir = Folder +  con + '_ML_' + str(sample) + '.csv' 
                 res_dir = Folder +  con + '_ML_' + 'Results.csv'
-                if os.path.exists(res_dir) and os.path.exists(tomerge_dir):
+                if os.path.exists(res_dir):
                     Result = pd.read_csv(res_dir) 
                     Tomerge = pd.read_csv(tomerge_dir)
                     Tomerge.dropna(axis = 0, thresh=4, inplace = True)
@@ -1721,7 +1846,7 @@ if __name__ == "__main__":
                     Result.dropna(axis = 0, thresh=4, inplace = True) 
                     Result.to_csv(res_dir,index = False,header=True)
                     os.remove(tomerge_dir)
-                elif os.path.exists(tomerge_dir):
+                else:
                     Result = pd.read_csv(tomerge_dir)
                     Result = Result.rename(columns={'ML': sample})
                     #Result = Result.drop(columns=['counts','pos','depth','dis'])
@@ -1729,6 +1854,7 @@ if __name__ == "__main__":
                     Result.to_csv(res_dir,index = False,header=True)
                     os.remove(tomerge_dir)
         #Result.to_csv(res_dir ,index = False,header=True)
+        print("All done.",len(bam_list),"bam files processed and merged for CHH.")    
         logm("All done. "+str(len(bam_list))+" bam files processed and merged for CHH.")
         
         for i in CG:
@@ -1737,6 +1863,13 @@ if __name__ == "__main__":
 
     topp=topp.groupby(['context','sample']).agg({'context_coverage': 'sum', 'coverage': 'sum'}).reset_index()
     #print('after groupby',topp) 
+    
+    for filename in spbam_list:
+        file = Folder + filename + '.bam'
+        fileind = Folder + filename + '.bam.bai'
+        os.remove(file)
+        os.remove(fileind)
+        
     
     end = time.time()
     
@@ -1752,9 +1885,5 @@ if __name__ == "__main__":
 # python3 finalfinal.py -w 4 -c 80 --CG --opt --mlv
 # MH/testsp/hg19
 # python testfull.py -w 4 -c 8 --CG
-
-# only modify for CG 
-# python testchr.py -w 4 -c 8 --CG
-# python testchr.py -w 4 -c 30 --CG --CHG --opt --mlv
 
 
