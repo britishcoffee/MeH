@@ -1,71 +1,154 @@
 <img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/MeHscr.png?raw=true" width="300">
 
-## System requirements
+# MeH
 
+Genomewide methylation heterogeneity and differential heterogeneity analysis.
+
+
+### Publication
+
+Estimating methylation heterogeneity in bisulfite sequencing data by mathematical modelling
+
+## Pipeline
+
+*** figure here***
+
+### Documentation
+
+MeH users guide is available as a [PDF file](./Manual.pdf), containing the detail of each step. For questions please open an issue on [GitHub](https://github.com/britishcoffee/MeHscr/issues).
+
+##  Table of Contents
+
+*** here***
+## System requirements
 * python 2.7 +
 * pandas package 0.24 +
 * pysam package 0.16.0.1 +
 * joblib package
 
-### Can be fulfilled by running one of the following lines
-```js
-pip install MeHscr
-pip3 install MeHscr
-```
-or
-```js
-sudo pip install MeHscr
-sudo pip3 install MeHscr
+## Installation
+
+MeH can be installed for Linux, macOS, or Windows by either compiling  from source which has the advantage that it will be optimized to the specific system:
+
+```bash
+git clone https://github.com/beritlin/MeHscr.git
+cd MeHscr
 ```
 ## Methylation heterogeneity profiling
+Use the scrpit **MeHscr.py** to calculated the methylation heterogeneity.
 
-### 1. Download genome_scr.py
-```js
-wget https://raw.githubusercontent.com/britishcoffee/MeHscr/main/MeHscr.py
-```
-### 2. Open a folder named "MeHdata" under the same directory
-```js
-mkdir MeHdata
-```
-### 3. Place .bam and .bam.bai files of all samples you wish to obtain methylation heterogeneity profiles into folder MeHdata/
-```js
-scp [directory_to_bamfiles_of_all_samples].bam* ./MeHdata
-# or within MeHdata/
-ln -s [directory_to_bamfiles_of_all_samples].bam* ./
-```
-### 4. Also place .fa and .fa.fai of the reference genome into the folder
-```js
-scp [directory_to_reference_genome].fa* ./MeHdata
-# or within MeHdata/
-ln -s [directory_to_reference_genome].fa* ./
-```
-### 5. Run the program genome_scr.py (see examples below)
+**Input**
 
-#### Examples
+* Run all the files under folder "**MeHdata**", including:
+  * .bam and .bam.bai files
+  * .fa and .fa.fai of the reference genome 
+
+
+
+**Useage** 
 
 ```ruby
-# 'CG' only with window size of 4 cytosines and 4 cores parallel processing (default score is 
-# pairwise-similarity-based method, default distance between methylation patterns is Hamming distance)
-    python MeHscr.py -w 4 -c 4 --CG
+$ python MeHscr.py -h
+	
+  usage: MeHscr.py [-h] [-w WINDOWSIZE] [-c CORES] [-m MEH] [-d DIST] [--CG]
+                   [--CHG] [--CHH] [--opt] [--mlv]
+
+  optional arguments:
+    -h, --help            show this help message and exit
+    -w WINDOWSIZE, --windowsize WINDOWSIZE
+                          number of CGs
+    -c CORES, --cores CORES
+                          number of cores
+    -m MEH, --MeH MEH     Methylation heterogeneity score 1:Abundance 2:PW
+                          3:Phylogeny [Default: 2]
+    -d DIST, --dist DIST  Distance between methylation patterns 1:Hamming 2:WDK [Default: 1]
+    --CG                  Include genomic context CG
+    --CHG                 Include genomic context CHG
+    --CHH                 Include genomic context CHH
+    --opt                 Outputs compositions of methylation patterns
+    --mlv                 Outputs methylation levels
+
 ```
+
+##### Examples
 
 ```ruby
-# 'CG', 'CHG' and 'CHH' with window size of 4 cytosines, weighted degree kernel for pairwise distances 
-# between methylation patterns and 8 cores parallel processing
-    python MeHscr.py -w 4 -c 8 --CG --CHG --CHH -d 2
+# 'CG' only with window size of 4 cytosines and 4 cores parallel processing (default score is pairwise-similarity-based method, default distance between methylation patterns is Hamming distance)
+python MeHscr.py -w 4 -c 4 --CG
+# 'CG', 'CHG' and 'CHH' with window size of 4 cytosines, weighted degree kernel for pairwise distances between methylation patterns and 8 cores parallel processing
+python MeHscr.py -w 4 -c 8 --CG --CHG --CHH -d 2
 ```
 
-### 6. Download DHR.R for subsequent analysis
+> The programme is running at folder "/MeHdata"
 
-#### Load required packages and functions
+**Output**
+
+* MeHscreening.log 
+
+```
+Sample AT31test has coverage 5240 for context CG out of data coverage 192834
+Sample AT33test has coverage 5236 for context CG out of data coverage 193431
+Sample AT35test has coverage 5203 for context CG out of data coverage 192548
+```
+
+*  /MeHdata/sample.0.csv files for each sample
+
+```bash
+## CG_AT31test_0.csv in the example
+chrom,pos,MeH,dis,strand
+1,511,1.41421,139,f
+1,791,2.7161,114,r
+1,810,3.69631,102,r
+1,840,4.11599,109,r
+```
+
+> Format desctiptions:
+>
+> (1) chromsome
+> (2) position
+> (3) Methlyation heterogeneity
+> (4) distance  between methylation patterns
+> (5) strand as 'f' for forward or 'r'  for reverse
+
+*  /MeHdata/Results.csv files for summary results
+
+```bash
+## CG_Results.csv in the example
+chrom,bin,strand,AT31test,AT33test,AT35test
+1,600,f,1.41421,4.88975,2.12965
+1,600,r,2.7161,2.05871,2.72246
+1,1000,r,3.90615,4.963145,4.10241
+1,2600,r,0.0,0.707105,0.0
+```
+
+> Format desctiptions:
+>
+> (1) chromsome
+> (2) bin size
+> (3) strand
+> (4)-(6) Methlyation heterogeneity for each sample
+
+
+## Subsequent analysis
+
+Use the function of scrpit **DHR.R** to find differentailly heterogeneity regions.
+
+##### Required packages
+
 ```R
-install.packages("roperators")
+# install.packages("roperators")
 library(roperators)
-install.packages("dplyr")
+# install.packages("dplyr")
 library(dplyr)
-install.packages("foreach")
+# install.packages("foreach")
 library(foreach)
+# install.packages("doParallel")
+library(doParallel)
+```
 
+##### Required Functions
+
+```R
 MeH.t = function(vector,conditions,compare) {
   ind1<-which(conditions == compare[1])+3 # +3 for chrom,bin and strand columns
   ind2<-which(conditions == compare[2])+3
@@ -82,7 +165,6 @@ MeH.t = function(vector,conditions,compare) {
   }
 }
 
-
 findgene = function(position) {
   chr=as.character(position[1])
   #message(chr)
@@ -98,56 +180,81 @@ findgene = function(position) {
   }
   return(list(chrom=chr,bin=BP,Gene=Gene,Promoter=promoter,strand=St))
 }
-
-```
-#### Load files for analysis by first setting the work directory to where your files are located
-```R
-setwd("~/MeHdata")
-CG <- read.table('CG_Results.csv',header=TRUE,sep=",")
-CHG <- read.table('CHG_Results.csv',header=TRUE,sep=",")
-CHH <- read.table('CHH_Results.csv',header=TRUE,sep=",")
 ```
 
-<img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image1.png?raw=true" width="600">
+##### Input
 
-#### Define conditions of all samples; i.e., A and B for 2 conditions, each with two replicates, samples 1 and 2 are replicates of A and samples 3 and 4 are replicates for B. This is for comparisons to be carried out later on
+* Results.csv files for summary results
+
+##### Example
+
+1. Load files for analysis by first setting the work directory to where your files are located
 
 ```R
-conditions <- c("A","A","B","B")
+CG <- read.csv('/MeHdata/CG_Results.csv',header=TRUE)
+CG=CG[which(apply(CG,1,function(x) sum(is.na(x)))==0),]
 ```
 
-#### Calculate t-statistics and p-values for all bins between user specified conditions; An example is for A vs B here
 ```R
-library(doParallel)
+> head(CG)
+  chrom  bin strand  AT31test  AT33test  AT35test
+1     1  600      f 1.4142100 4.8897500 2.1296500
+2     1  600      r 2.7161000 2.0587100 2.7224600
+3     1 1000      r 3.9061500 4.9631450 4.1024100
+4     1 2600      r 0.0000000 0.7071050 0.0000000
+5     1 3800      f 0.3345013 0.2571291 0.1844622
+6     1 4200      f 0.0000000 0.0000000 0.0000000
+
+```
+
+2. Define conditions of all samples
+
+```R
+conditions <- c("A","B","C")
+```
+
+3. Calculate t-statistics and p-values for all bins between user specified conditions
+
+```R
+# An example is for A vs B here
 registerDoParallel(cores=4)
 # Compare condition B with A
 Comp1<-data.frame(foreach(i = 1:dim(CG)[1],.combine = rbind) %dopar% 
-                      MeH.t(CG[i,],conditions=conditions,c("A","B")))
+                      MeH.t(CG[i,],conditions=conditions,c("A","B","C")))
 Comp1$padj=p.adjust(Comp1$pvalue)
+stopCluster()
 ```
-#### Select differential heterogeneous regions based on user specified conditions; i.e., p-value of 0.05 and delta of 1.4 (positive or negative)
-```R
 
+4. Select differential heterogeneous regions based on user specified conditions
+
+```R
+#  i.e., p-value of 0.05 and delta of 1.4 (positive or negative)
 Comp1$DHR <- (Comp1$padj<0.05)*(abs(Comp1$delta)>1.4)
 Comp1$DHR <- (Comp1$pvalue<0.05)*(abs(Comp1$delta)>1.4)
 Comp1$DHR.up <- (Comp1$pvalue<0.05)*(Comp1$delta>1.4)
 Comp1$DHR.down <- (Comp1$pvalue<0.05)*(Comp1$delta<(-1.4))
-
 ```
 
-<img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image6.png?raw=true" width="450">
-
-#### DHG analysis if bed file is given as .txt with each row representing a gene and consists of gene name, chromosome, TSS, TES and strand as 'f' (forward) or 'r' (reverse)
+5. DHG analysis if bed file is given as .txt with each row representing a gene and consists of gene name, chromosome, TSS, TES and strand
 
 ```R
-geneloc<-read.table('genelist.txt',header=TRUE)
-colnames(geneloc)<-c("gene","chrom","strand","TSS","TES")
+geneloc <- read.table('genelist.txt',header=TRUE)
+colnames(geneloc) <- c("gene","chrom","strand","TSS","TES")
 geneloc$strand[as.character(geneloc$strand)=="+"]<-"f"
 geneloc$strand[as.character(geneloc$strand)=="-"]<-"r"
 ```
-<img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/image7.png?raw=true" width="300">
-
 ```R
-genelist<-foreach(i = 1:dim(Comp1)[1],.combine = rbind) %dopar% findgene(Comp1[i,c("chrom","bin","strand")]) 
+genelist <- foreach(i = 1:dim(Comp1)[1],.combine = rbind) %dopar% findgene(Comp1[i,c("chrom","bin","strand")]) 
 ```
 
+
+
+##### Output
+
+```bash
+ gene chrom TSS TES strand
+1 DRD4 chr11637304 640705 f
+2 POR chr7 75544419 75616173 f
+3 HLA-E chr6_qbl_hap6 1750097 1754897 f
+4 HLA-E chr6_ssto_hap7	1789472 1794272 f
+```
