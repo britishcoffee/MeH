@@ -1,3 +1,5 @@
+
+
 <img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/MeHscr.png?raw=true" width="300">
 
 # MeH
@@ -31,7 +33,7 @@ MeH users guide is available as a [PDF file](./Manual.pdf), containing the detai
 MeH can be installed for Linux, macOS, or Windows by either compiling  from source which has the advantage that it will be optimized to the specific system:
 
 ```bash
-git clone https://github.com/beritlin/MeHscr.git
+git clone https://github.com/britishcoffee/MeHscr.git
 cd MeHscr
 ```
 ## Methylation heterogeneity profiling
@@ -89,6 +91,7 @@ python MeHscr.py -w 4 -c 8 --CG --CHG --CHH -d 2
 Sample AT31test has coverage 5240 for context CG out of data coverage 192834
 Sample AT33test has coverage 5236 for context CG out of data coverage 193431
 Sample AT35test has coverage 5203 for context CG out of data coverage 192548
+Sample AT37test has coverage 5233 for context CG out of data coverage 192694
 ```
 
 *  /MeHdata/sample.0.csv files for each sample
@@ -114,11 +117,11 @@ chrom,pos,MeH,dis,strand
 
 ```bash
 ## CG_Results.csv in the example
-chrom,bin,strand,AT31test,AT33test,AT35test
-1,600,f,1.41421,4.88975,2.12965
-1,600,r,2.7161,2.05871,2.72246
-1,1000,r,3.90615,4.963145,4.10241
-1,2600,r,0.0,0.707105,0.0
+chrom,bin,strand,AT31test,AT33test,AT37test,AT35test
+1,600,f,1.41421,4.42434,1.97092,2.219035
+1,600,r,2.7161,2.59751,3.62414,2.79942
+1,1000,r,3.90615,4.90306,6.5213,4.0907849999999994
+1,2600,r,0.0,0.707105,0.0,0.0
 ```
 
 > Format desctiptions:
@@ -197,20 +200,19 @@ CG=CG[which(apply(CG,1,function(x) sum(is.na(x)))==0),]
 
 ```R
 > head(CG)
-  chrom  bin strand  AT31test  AT33test  AT35test
-1     1  600      f 1.4142100 4.8897500 2.1296500
-2     1  600      r 2.7161000 2.0587100 2.7224600
-3     1 1000      r 3.9061500 4.9631450 4.1024100
-4     1 2600      r 0.0000000 0.7071050 0.0000000
-5     1 3800      f 0.3345013 0.2571291 0.1844622
-6     1 4200      f 0.0000000 0.0000000 0.0000000
-
+  chrom  bin strand  AT31test  AT33test AT37test  AT35test
+1     1  600      f 1.4142100 4.4243400  1.97092 2.2190350
+2     1  600      r 2.7161000 2.5975100  3.62414 2.7994200
+3     1 1000      r 3.9061500 4.9030600  6.52130 4.0907850
+4     1 2600      r 0.0000000 0.7071050  0.00000 0.0000000
+5     1 3800      f 0.3304952 0.2571291  0.00000 0.1844622
+6     1 4200      f 0.0000000 0.0000000  0.00000 0.0000000
 ```
 
 2. Define conditions of all samples
 
 ```R
-conditions <- c("A","B","C")
+conditions <- c("A","A","B","B")
 ```
 
 3. Calculate t-statistics and p-values for all bins between user specified conditions
@@ -220,9 +222,9 @@ conditions <- c("A","B","C")
 registerDoParallel(cores=4)
 # Compare condition B with A
 Comp1<-data.frame(foreach(i = 1:dim(CG)[1],.combine = rbind) %dopar% 
-                      MeH.t(CG[i,],conditions=conditions,c("A","B","C")))
+                      MeH.t(CG[i,],conditions=conditions,c("A","A","B","B")))
 Comp1$padj=p.adjust(Comp1$pvalue)
-stopCluster()
+stopImplicitCluster()
 ```
 
 4. Select differential heterogeneous regions based on user specified conditions
@@ -235,6 +237,19 @@ Comp1$DHR.up <- (Comp1$pvalue<0.05)*(Comp1$delta>1.4)
 Comp1$DHR.down <- (Comp1$pvalue<0.05)*(Comp1$delta<(-1.4))
 ```
 
+```R
+> head(Comp1)
+  chrom  bin delta pvalue     mean2     mean1 padj
+1     1  600     0      1 2.9192750 2.9192750    1
+2     1  600     0      1 2.6568050 2.6568050    1
+3     1 1000     0      1 4.4046050 4.4046050    1
+4     1 2600     0      1 0.3535525 0.3535525    1
+5     1 3800     0      1 0.2938122 0.2938122    1
+6     1 4200     0    NaN 0.0000000 0.0000000  NaN
+```
+
+
+
 5. DHG analysis if bed file is given as .txt with each row representing a gene and consists of gene name, chromosome, TSS, TES and strand
 
 ```R
@@ -244,17 +259,28 @@ geneloc$strand[as.character(geneloc$strand)=="+"]<-"f"
 geneloc$strand[as.character(geneloc$strand)=="-"]<-"r"
 ```
 ```R
+> head(geneloc)
+     gene          chrom   strand      TSS TES
+1    DRD4          chr11   637304   640705   f
+2     POR           chr7 75544419 75616173   f
+3   HLA-E  chr6_qbl_hap6  1750097  1754897   f
+4   HLA-E chr6_ssto_hap7  1789472  1794272   f
+5 SMARCA4          chr19 11071597 11172958   f
+6    TBCB          chr19 36605887 36616849   f
+```
+
+```R
 genelist <- foreach(i = 1:dim(Comp1)[1],.combine = rbind) %dopar% findgene(Comp1[i,c("chrom","bin","strand")]) 
 ```
 
-
-
 ##### Output
 
-```bash
- gene chrom TSS TES strand
-1 DRD4 chr11637304 640705 f
-2 POR chr7 75544419 75616173 f
-3 HLA-E chr6_qbl_hap6 1750097 1754897 f
-4 HLA-E chr6_ssto_hap7	1789472 1794272 f
+```R
+> head(genelist)
 ```
+
+
+
+## Contact
+
+Sabrina - email
