@@ -152,21 +152,22 @@ library(doParallel)
 ##### Required Functions
 
 ```R
-MeH.t = function(vector,conditions,compare) {
-  ind1<-which(conditions == compare[1])+3 # +3 for chrom,bin and strand columns
+
+MeH.t=function(vector,conditions,compare) {
+  ind1<-which(conditions == compare[1])+3 
   ind2<-which(conditions == compare[2])+3
-  #l=length(vector)
   vector=as.data.frame(vector)
   mean2=mean(as.numeric(vector[ind2]),na.rm=TRUE)
   mean1=mean(as.numeric(vector[ind1]),na.rm=TRUE)
   diff=mean2-mean1
   if(sd(vector[ind1])<1e-5 && sd(vector[ind2])<1e-5) 
-    return(data.frame(chrom=vector[1],pos=vector[2],delta=diff,pvalue=NaN,mean2=mean2,mean1=mean1))
+    return(data.frame(chrom=vector[1],pos=vector[2],strand=vector[3],delta=diff,pvalue=NaN,mean2=mean2,mean1=mean1))
   else {
     out=t.test(vector[ind1],vector[ind2])
-    return(data.frame(chrom=vector[1],pos=vector[2],delta=out$est[2]-out$est[1],pvalue=as.numeric(out$p.value),mean2=out$est[2],mean1=out$est[1]))
+    return(data.frame(chrom=vector[1],pos=vector[2],strand=vector[3],delta=out$est[2]-out$est[1],pvalue=as.numeric(out$p.value),mean2=out$est[2],mean1=out$est[1]))
   }
 }
+
 
 findgene = function(position) {
   chr=as.character(position[1])
