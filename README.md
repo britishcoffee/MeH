@@ -27,7 +27,7 @@ MeH users guide is available as a [PDF file](./Manual.pdf), containing the detai
    * [Usages](#usages) 
    * [Examples](#examples) 
 * [Subsequent analysis](#subsequent-analysis)
-       * [Example](#example)
+   *  [Example](#example)
 
 ## System requirements
 * python 2.7 + 
