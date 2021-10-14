@@ -345,7 +345,7 @@ DHG Promoter down: CHI3L1, ATP1A1
 
 
 
-<img src="https://avatars.githubusercontent.com/u/30218118?v=4" width="300">
+<img src="https://avatars.githubusercontent.com/u/30218118?v=4" width="100">
 
 **Sabrina**- [:email:](ytchang.sabrina@gmail.com) 
 
