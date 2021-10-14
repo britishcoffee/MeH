@@ -24,7 +24,6 @@ MeH users guide is available as a [PDF file](./Manual.pdf), containing the detai
    * [System requirements](#System requirements)
    * [Installation](#Installation)
    * [Methylation heterogeneity profiling](#Methylation heterogeneity profiling)
-         * [Useage](#Useage)
          * [Examples](#Examples)
    * * [STDIN](#stdin)
       * [Local files](#local-files)
