@@ -2,9 +2,9 @@
 
 <img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/MeHscr.png?raw=true" width="300">
 
-# MeH
+# MeH :sheep:
 
-Genomewide methylation heterogeneity and differential heterogeneity analysis.
+:mega: Genomewide methylation heterogeneity and differential heterogeneity analysis.
 
 
 ### Publication
@@ -17,13 +17,20 @@ Estimating methylation heterogeneity in bisulfite sequencing data by mathematica
 
 ### Documentation
 
-MeH users guide is available as a [PDF file](./Manual.pdf), containing the detail of each step. For questions please open an issue on [GitHub](https://github.com/britishcoffee/MeHscr/issues).
+MeH users guide is available as a [PDF file](./Manual.pdf), containing the detail of each step. For questions please open an issue on [GitHub](https://github.com/britishcoffee/MeHscr/issues) or [contact me](#contact).
 
 ##  Table of Contents
 
-*** here***
+* [System requirements](#system-requirements) 
+* [Installation](#Installation)
+* [Methylation heterogeneity profiling](#methylation-heterogeneity-profiling)
+   * [Usages](#usages) 
+   * [Examples](#examples) 
+* [Subsequent analysis](#subsequent-analysis)
+       * [Example](#example)
+
 ## System requirements
-* python 2.7 +
+* python 2.7 + 
 * pandas package 0.24 +
 * pysam package 0.16.0.1 +
 * joblib package
@@ -39,7 +46,7 @@ cd MeHscr
 ## Methylation heterogeneity profiling
 Use the scrpit **MeHscr.py** to calculated the methylation heterogeneity.
 
-**Input**
+##### Input
 
 * Run all the files under folder "**MeHdata**", including:
   * .bam and .bam.bai files
@@ -47,7 +54,7 @@ Use the scrpit **MeHscr.py** to calculated the methylation heterogeneity.
 
 
 
-**Useage** 
+##### Useage
 
 ```ruby
 $ python MeHscr.py -h
@@ -83,7 +90,7 @@ python MeHscr.py -w 4 -c 8 --CG --CHG --CHH -d 2
 
 > The programme is running at folder "/MeHdata"
 
-**Output**
+##### Output
 
 * MeHscreening.log 
 
@@ -152,7 +159,6 @@ library(doParallel)
 ##### Required Functions
 
 ```R
-
 MeH.t=function(vector,conditions,compare) {
   ind1<-which(conditions == compare[1])+3 
   ind2<-which(conditions == compare[2])+3
@@ -168,14 +174,14 @@ MeH.t=function(vector,conditions,compare) {
   }
 }
 
-
 findgene = function(position) {
-  chr=as.character(position[1])
+  chr=as.character(position[,1])
   #message(chr)
-  BP=as.numeric(position[2])
+  BP=as.numeric(position[,2])
   #message(BP)
-  St=as.character(position[3])
+  St=as.character(position[,3])
   Gene=geneloc$gene[which((geneloc$TSS<=BP)*(geneloc$TES>=BP)*(as.character(geneloc$chrom)==chr)*(as.character(geneloc$strand)==as.character(St))==1)][1]
+  #user can define theie own promoter region [default: 1000]
   if (St=='f') {
     promoter=geneloc$gene[which((geneloc$TSS-1000<=BP)*(geneloc$TSS+1000>=BP)*(as.character(geneloc$chrom)==chr)*(geneloc$strand=="f")==1)][1]
   }
@@ -189,41 +195,44 @@ findgene = function(position) {
 ##### Input
 
 * Results.csv files for summary results
+* genelist.txt
+
+> genelist.txt can be modified based on gene.gff file consists of gene, chromosome, TSS, TES, and strand.
 
 ##### Example
 
 1. Load files for analysis by first setting the work directory to where your files are located
 
 ```R
-CG <- read.csv('/MeHdata/CG_Results.csv',header=TRUE)
+CG <- read.csv('MeHdata/CG_Results_test.csv',header=TRUE)
 CG=CG[which(apply(CG,1,function(x) sum(is.na(x)))==0),]
 ```
 
 ```R
 > head(CG)
-  chrom  bin strand  AT31test  AT33test AT37test  AT35test
-1     1  600      f 1.4142100 4.4243400  1.97092 2.2190350
-2     1  600      r 2.7161000 2.5975100  3.62414 2.7994200
-3     1 1000      r 3.9061500 4.9030600  6.52130 4.0907850
-4     1 2600      r 0.0000000 0.7071050  0.00000 0.0000000
-5     1 3800      f 0.3304952 0.2571291  0.00000 0.1844622
-6     1 4200      f 0.0000000 0.0000000  0.00000 0.0000000
+  chrom  bin strand  AT31test  AT33test AT37test AT35test
+1     1  600      f 1.4142100 4.6827400 11.79846 12.17126
+2     1  600      r 2.6795800 2.1208600 13.73091 12.77923
+3     1 1000      r 3.8819800 4.9631450 16.54558 14.10241
+4     1 2600      r 0.0000000 0.7071050 10.00000 10.00000
+5     1 3800      f 0.3304952 0.2571291 10.00000 10.18446
+6     1 4200      f 0.0000000 0.0000000 10.00000 10.00000
 ```
 
 2. Define conditions of all samples
 
 ```R
+# An example is for A vs B here
 conditions <- c("A","A","B","B")
 ```
 
 3. Calculate t-statistics and p-values for all bins between user specified conditions
 
 ```R
-# An example is for A vs B here
 registerDoParallel(cores=4)
 # Compare condition B with A
 Comp1<-data.frame(foreach(i = 1:dim(CG)[1],.combine = rbind) %dopar% 
-                      MeH.t(CG[i,],conditions=conditions,c("A","A","B","B")))
+                      MeH.t(CG[i,],conditions=conditions,c("A","B")))
 Comp1$padj=p.adjust(Comp1$pvalue)
 stopImplicitCluster()
 ```
@@ -240,48 +249,85 @@ Comp1$DHR.down <- (Comp1$pvalue<0.05)*(Comp1$delta<(-1.4))
 
 ```R
 > head(Comp1)
-  chrom  bin delta pvalue     mean2     mean1 padj
-1     1  600     0      1 2.9192750 2.9192750    1
-2     1  600     0      1 2.6568050 2.6568050    1
-3     1 1000     0      1 4.4046050 4.4046050    1
-4     1 2600     0      1 0.3535525 0.3535525    1
-5     1 3800     0      1 0.2938122 0.2938122    1
-6     1 4200     0    NaN 0.0000000 0.0000000  NaN
+  chrom  bin strand     delta      pvalue    mean2     mean1      padj DHR  DHR.up DHR.down
+1     1  600      f  8.936383 0.111403580 11.98486 3.0484750 1.0000000   0      0        0
+2     1  600      r 10.854850 0.006457730 13.25507 2.4002200 0.8395050   1      1        0
+3     1 1000      r 10.901435 0.039283684 15.32400 4.4225625 1.0000000   1      1        0
+4     1 2600      r  9.646448 0.023322349 10.00000 0.3535525 1.0000000   1      1        0
+5     1 3800      f  9.798419 0.001708033 10.09223 0.2938122 0.2698692   1      1        0
+6     1 4200      f 10.000000         NaN 10.00000 0.0000000       NaN  NA     NA       NA
 ```
-
-
 
 5. DHG analysis if bed file is given as .txt with each row representing a gene and consists of gene name, chromosome, TSS, TES and strand
 
 ```R
-geneloc <- read.table('genelist.txt',header=TRUE)
-colnames(geneloc) <- c("gene","chrom","strand","TSS","TES")
-geneloc$strand[as.character(geneloc$strand)=="+"]<-"f"
-geneloc$strand[as.character(geneloc$strand)=="-"]<-"r"
+geneloc <- read.table('MeHdata/genelist.txt',header=T)
+colnames(geneloc) <- c("gene","chrom","TSS","TES","strand")
+geneloc$strand<-as.character(geneloc$strand)
+#geneloc$strand[as.character(geneloc$strand)=="+"] <- "f"
+#geneloc$strand[as.character(geneloc$strand)=="-"] <- "r"
+geneloc$gene<-as.character(geneloc$gene)
 ```
 ```R
 > head(geneloc)
-     gene          chrom   strand      TSS TES
-1    DRD4          chr11   637304   640705   f
-2     POR           chr7 75544419 75616173   f
-3   HLA-E  chr6_qbl_hap6  1750097  1754897   f
-4   HLA-E chr6_ssto_hap7  1789472  1794272   f
-5 SMARCA4          chr19 11071597 11172958   f
-6    TBCB          chr19 36605887 36616849   f
+     gene       chrom      TSS      TES strand
+1    DRD4          11   637304   640705      f
+2     POR           7 75544419 75616173      f
+3   HLA-E  6_qbl_hap6  1750097  1754897      f
+4   HLA-E 6_ssto_hap7  1789472  1794272      f
+5 SMARCA4          19 11071597 11172958      f
+6    TBCB          19 36605887 36616849      f
 ```
+
+6. Match the gene from provided gene lists to the  heterogeneous regions.
 
 ```R
 genelist <- foreach(i = 1:dim(Comp1)[1],.combine = rbind) %dopar% findgene(Comp1[i,c("chrom","bin","strand")]) 
 ```
 
-##### Output
+```R
+> genelist
+           chrom bin   Gene      Promoter     strand
+result.15  "1"   12200 "DDX11L1" "DDX11L1"    "f"
+result.16  "1"   12200 "NA"      "NA"         "r"
+result.17  "1"   12600 "DDX11L1" "DDX11L1"    "f"
+result.18  "1"   12600 "NA"      "NA"         "r"
+result.19  "1"   13000 "DDX11L1" "NA"         "f"
+result.20  "1"   13800 "DDX11L1" "NA"         "f"
+```
+
+7. Get the up/down regulted DHG gene/promoter lists
 
 ```R
-> head(genelist)
+DHG_Genebodys_up<-unique(unlist(genelist[which(Comp1$DHR.up==1),"Gene"])[!is.na(unlist(genelist[which(Comp1$DHR.up==1),"Gene"]))])
+DHG_Genebodys_down<-unique(unlist(genelist[which(Comp1$DHR.down==1),"Gene"])[!is.na(unlist(genelist[which(Comp1$DHR.down==1),"Gene"]))])
+DHG_Promoter_up<-unique(unlist(genelist[which(Comp1$DHR.up==1),"Promoter"])[!is.na(unlist(genelist[which(Comp1$DHR.up==1),"Promoter"]))])
+DHG_Promoter_down<-unique(unlist(genelist[which(Comp1$DHR.down==1),"Promoter"])[!is.na(unlist(genelist[which(Comp1$DHR.down==1),"Promoter"]))])
+```
+
+```R
+result <- file("MeHdata/DHG.txt")
+writeLines(paste("DHG Genebodys up: ",paste(DHG_Genebodys_up,collapse= ', ')), result)
+close(result)
+write(paste("DHG Genebodys down: ",paste(DHG_Genebodys_down,collapse= ', ')),"MeHdata/DHG.txt",append=TRUE)
+write(paste("DHG Promoter up: ", paste(DHG_Promoter_up,collapse= ', ')),"MeHdata/DHG.txt",append=TRUE)
+write(paste("DHG Promoter down: ",paste(DHG_Promoter_down,collapse= ', ')),"MeHdata/DHG.txt",append=TRUE)
+```
+
+##### Output
+
+* DEG.txt
+
+```R
+DHG Genebodys up:  DDX11L1
+DHG Genebodys down:
+DHG Promoter up:  DDX11L1, MIR1302-10
+DHG Promoter down:
 ```
 
 
 
 ## Contact
 
-Sabrina - email
+Sabrina -:email:  ytchang.sabrina@gmail.com
+
