@@ -29,7 +29,7 @@ MeH users guide is available as a [PDF file](./Manual.pdf), containing the detai
          * [Example](#Example)
 
 ## System requirements
-* python 2.7 +
+* python 2.7 + 
 * pandas package 0.24 +
 * pysam package 0.16.0.1 +
 * joblib package
@@ -280,11 +280,11 @@ geneloc$gene<-as.character(geneloc$gene)
 6            CDS     1 3760 3913      f
 ```
 
+6. DHG analysis if bed file is given as .txt with each row representing a gene and consists of gene name, chromosome, TSS, TES and strand
+
 ```R
 genelist <- foreach(i = 1:dim(Comp1)[1],.combine = rbind) %dopar% findgene(Comp1[i,c("chrom","bin","strand")]) 
 ```
-
-##### Output
 
 ```R
 > genelist
@@ -294,6 +294,25 @@ result.2   "1"   600   "NA"      "NA"         "r"
 result.3   "1"   1000  "NA"      "NA"         "r"
 result.4   "1"   2600  "NA"      "NA"         "r"
 result.5   "1"   3800  "NA"      "NA"         "f"
+```
+
+
+
+7. DHG analysis 
+
+```R
+DHG_Genebodys_up<-unique(unlist(genelist[which(Comp1$DHR.up==1),"Gene"])[!is.na(unlist(genelist[which(Comp1$DHR.up==1),"Gene"]))])
+DHG_Genebodys_down<-unique(unlist(genelist[which(Comp1$DHR.down==1),"Gene"])[!is.na(unlist(genelist[which(Comp1$DHR.down==1),"Gene"]))])
+DHG_Promoter_up<-unique(unlist(genelist[which(Comp1$DHR.up==1),"Promoter"])[!is.na(unlist(genelist[which(Comp1$DHR.up==1),"Promoter"]))])
+DHG_Promoter_down<-unique(unlist(genelist[which(Comp1$DHR.down==1),"Promoter"])[!is.na(unlist(genelist[which(Comp1$DHR.down==1),"Promoter"]))])
+```
+
+
+
+##### Output
+
+```R
+
 ```
 
 
