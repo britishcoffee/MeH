@@ -271,11 +271,11 @@ geneloc$gene<-as.character(geneloc$gene)
 ```R
 > head(geneloc)
      gene chrom strand       TSS       TES
-17 CHI3L1     1      r     24600     30000
-20 ATP1A1     1      f 116915794 116947396
+17 CHI3L1     1      r      6500      7000
+20 ATP1A1     1      f     55000     59200
 33 CPSF3L     1      r   1246964   1260067
 34   GBP5     1      r  89724633  89738544
-36   GBP4     1      r  89646830  89664633
+36   GBP4     1      r     92000    100200
 38  FCRL3     1      r 157647977 157670647
 ```
 
