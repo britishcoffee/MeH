@@ -52,6 +52,8 @@ cd MeHscr
 ## Methylation heterogeneity profiling
 Use the scrpit **MeHscr.py** to calculated the methylation heterogeneity.
 
+> :grey_exclamation:used as command-line in your terminal.
+
 ##### Input
 
 * Run all the files under folder "**MeHdata**", including:
@@ -147,6 +149,8 @@ chrom,bin,strand,AT31test,AT33test,AT37test,AT35test
 ## Subsequent analysis
 
 Use the function of scrpit **DHR.R** to find differentailly heterogeneity regions.
+
+> :grey_exclamation: under R envrionment. 
 
 ##### Required packages
 
@@ -350,7 +354,7 @@ DHG Promoter down: CHI3L1, ATP1A1
 
 
 
-<img src="https://avatars.githubusercontent.com/u/30218118?v=4" width="100">
+[<img src="https://avatars.githubusercontent.com/u/30218118?v=4" width="100">](ytchang.sabrina@gmail.com) 
 
-**Sabrina**- [:email:](ytchang.sabrina@gmail.com) 
+**Sabrina**- [:email: ytchang.sabrina@gmail.com](ytchang.sabrina@gmail.com) 
 
