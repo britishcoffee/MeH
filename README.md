@@ -2,7 +2,7 @@
 
 :mega: DNA methylation heterogeneity (**MeH**) measures the epigenetic diversity within a cell population where the behaviour of individual cells can vary as differential responses to the environmental stimuli or dynamic progression of cellular development.
 
-![Github All Releases](https://img.shields.io/github/downloads/britishcoffee/MeHscr/total.svg?style=for-the-badge)![issue](https://img.shields.io/github/issues/britishcoffee/MeHscr?style=for-the-badge)![star](https://img.shields.io/github/stars/britishcoffee/MeHscr?style=for-the-badge)
+![Github All Releases](https://img.shields.io/github/downloads/britishcoffee/MeHscr/total.svg?style=for-the-badge)   ![issue](https://img.shields.io/github/issues/britishcoffee/MeHscr?style=for-the-badge)    ![star](https://img.shields.io/github/stars/britishcoffee/MeHscr?style=for-the-badge) 
 
 
 
