@@ -223,7 +223,7 @@ CG=CG[which(apply(CG,1,function(x) sum(is.na(x)))==0),]
 
 ```R
 # An example is for A vs B here
-conditions <- c("A","A","B","B")
+conditions <- c("A","B","B","A")
 ```
 
 3. Calculate t-statistics and p-values for all bins between user specified conditions
@@ -249,13 +249,13 @@ Comp1$DHR.down <- (Comp1$pvalue<0.05)*(Comp1$delta<(-1.4))
 
 ```R
 > head(Comp1)
-  chrom  bin strand     delta      pvalue    mean2     mean1      padj DHR  DHR.up DHR.down
-1     1  600      f  8.936383 0.111403580 11.98486 3.0484750 1.0000000   0      0        0
-2     1  600      r 10.854850 0.006457730 13.25507 2.4002200 0.8395050   1      1        0
-3     1 1000      r 10.901435 0.039283684 15.32400 4.4225625 1.0000000   1      1        0
-4     1 2600      r  9.646448 0.023322349 10.00000 0.3535525 1.0000000   1      1        0
-5     1 3800      f  9.798419 0.001708033 10.09223 0.2938122 0.2698692   1      1        0
-6     1 4200      f 10.000000         NaN 10.00000 0.0000000       NaN  NA     NA       NA
+  chrom  bin strand      delta    pvalue     mean2     mean1 padj DHR DHR.up DHR.down
+1     1  600      f  1.3810075 0.4527029 3.1976300 1.8166225    1   0      0        0
+2     1  600      r  0.3530650 0.6162005 3.1108250 2.7577600    1   0      0        0
+3     1 1000      r  1.7137125 0.2774109 5.7121800 3.9984675    1   0      0        0
+4     1 2600      r  0.3535525 0.5000000 0.3535525 0.0000000    1   0      0        0
+5     1 3800      f -0.1289142 0.4951501 0.1285645 0.2574787    1   0      0        0
+6     1 4200      f  0.0000000       NaN 0.0000000 0.0000000  NaN  NA     NA       NA
 ```
 
 5. DHG analysis if bed file is given as .txt with each row representing a gene and consists of gene name, chromosome, TSS, TES and strand
@@ -270,30 +270,44 @@ geneloc$gene<-as.character(geneloc$gene)
 ```
 ```R
 > head(geneloc)
-     gene       chrom      TSS      TES strand
-1    DRD4          11   637304   640705      f
-2     POR           7 75544419 75616173      f
-3   HLA-E  6_qbl_hap6  1750097  1754897      f
-4   HLA-E 6_ssto_hap7  1789472  1794272      f
-5 SMARCA4          19 11071597 11172958      f
-6    TBCB          19 36605887 36616849      f
+     gene chrom strand       TSS       TES
+17 CHI3L1     1      r     24600     30000
+20 ATP1A1     1      f 116915794 116947396
+33 CPSF3L     1      r   1246964   1260067
+34   GBP5     1      r  89724633  89738544
+36   GBP4     1      r  89646830  89664633
+38  FCRL3     1      r 157647977 157670647
 ```
 
-6. Match the gene from provided gene lists to the  heterogeneous regions.
+6. Match the gene from provided gene lists to the regions.
 
 ```R
 genelist <- foreach(i = 1:dim(Comp1)[1],.combine = rbind) %dopar% findgene(Comp1[i,c("chrom","bin","strand")]) 
 ```
 
 ```R
-> genelist
-           chrom bin   Gene      Promoter     strand
-result.15  "1"   12200 "DDX11L1" "DDX11L1"    "f"
-result.16  "1"   12200 "NA"      "NA"         "r"
-result.17  "1"   12600 "DDX11L1" "DDX11L1"    "f"
-result.18  "1"   12600 "NA"      "NA"         "r"
-result.19  "1"   13000 "DDX11L1" "NA"         "f"
-result.20  "1"   13800 "DDX11L1" "NA"         "f"
+> genelist[20:25,]
+          chrom bin   Gene      Promoter strand
+result.20 "1"   13800 "DDX11L1" "NA"     "f"   
+result.21 "1"   20200 "NA"      "NA"     "f"   
+result.22 "1"   21000 "NA"      "NA"     "f"   
+result.23 "1"   21000 "WASH7P"  "NA"     "r"   
+result.24 "1"   21400 "NA"      "NA"     "f"   
+result.25 "1"   21400 "WASH7P"  "NA"     "r"  
+```
+
+```R
+Result_whole<-merge(Comp1,genelist,c("chrom","bin","strand"))
+```
+```R
+> head(Result_whole)
+  chrom   bin strand       delta     pvalue     mean2     mean1 padj DHR DHR.up DHR.down    Gene Promoter
+1     1  1000      r  1.71371250 0.27741094 5.7121800 3.9984675    1   0      0        0      NA       NA
+2     1 12200      f -0.30304500 0.50000000 0.0000000 0.3030450    1   0      0        0 DDX11L1  DDX11L1
+3     1 12200      r -0.28284200 0.53267809 0.3142689 0.5971109    1   0      0        0      NA       NA
+4     1 12600      f  0.24748675 0.09033447 0.3889077 0.1414210    1   0      0        0 DDX11L1  DDX11L1
+5     1 12600      r -0.02142742 0.90030415 0.6285378 0.6499652    1   0      0        0      NA       NA
+6     1 13000      f  0.00000000        NaN 0.0000000 0.0000000  NaN  NA     NA       NA DDX11L1       NA
 ```
 
 7. Get the up/down regulted DHG gene/promoter lists
@@ -319,10 +333,10 @@ write(paste("DHG Promoter down: ",paste(DHG_Promoter_down,collapse= ', ')),"MeHd
 * DEG.txt
 
 ```R
-DHG Genebodys up:  DDX11L1
-DHG Genebodys down:
-DHG Promoter up:  DDX11L1, MIR1302-10
-DHG Promoter down:
+DHG Genebodys up:  
+DHG Genebodys down: CHI3L1
+DHG Promoter up:  
+DHG Promoter down: CHI3L1, ATP1A1
 ```
 
 
