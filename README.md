@@ -1,19 +1,25 @@
-
-
-<img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/MeHscr.png?raw=true" width="300">
-
 # MeH :sheep:
 
-:mega: Genomewide methylation heterogeneity and differential heterogeneity analysis.
+:mega: DNA methylation heterogeneity (**MeH**) measures the epigenetic diversity within a cell population where the behaviour of individual cells can vary as differential responses to the environmental stimuli or dynamic progression of cellular development.
+
+![Github All Releases](https://img.shields.io/github/downloads/britishcoffee/MeHscr/total.svg?style=for-the-badge)![issue](https://img.shields.io/github/issues/britishcoffee/MeHscr?style=for-the-badge)![star](https://img.shields.io/github/stars/britishcoffee/MeHscr?style=for-the-badge)
+
+
+
+
+
+<p align="center"><img src="https://github.com/britishcoffee/Methylationhet/blob/main/READMEimages/MeHscr.png?raw=true" width="300"></p>
+
+
 
 
 ### Publication
 
-Estimating methylation heterogeneity in bisulfite sequencing data by mathematical modelling
+[Estimating methylation heterogeneity in bisulfite sequencing data by mathematical modelling. journal. doi: (2021)]()
 
 ## Pipeline
 
-*** figure here***
+<p align="center"><img src="./READMEimages/pipline.png"></p>
 
 ### Documentation
 
@@ -51,8 +57,6 @@ Use the scrpit **MeHscr.py** to calculated the methylation heterogeneity.
 * Run all the files under folder "**MeHdata**", including:
   * .bam and .bam.bai files
   * .fa and .fa.fai of the reference genome 
-
-
 
 ##### Useage
 
@@ -137,6 +141,7 @@ chrom,bin,strand,AT31test,AT33test,AT37test,AT35test
 > (2) bin size
 > (3) strand
 > (4)-(6) Methlyation heterogeneity for each sample
+
 
 
 ## Subsequent analysis
