@@ -60,7 +60,7 @@ Use the scrpit **MeHscr.py** to calculated the methylation heterogeneity.
   * .bam and .bam.bai files
   * .fa and .fa.fai of the reference genome 
 
-##### Useage
+##### Usage
 
 ```ruby
 $ python MeHscr.py -h
