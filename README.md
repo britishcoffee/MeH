@@ -139,10 +139,10 @@ chrom,bin,strand,AT31test,AT33test,AT37test,AT35test
 
 > Format desctiptions:
 >
-> (1) chromsome
-> (2) bin size
-> (3) strand
-> (4)-(6) Methlyation heterogeneity for each sample
+> (1) chrom: chromsome
+> (2) bin: position (of bin), specified to be at the centre of the bin; i.e. 600 means (400,800]
+> (3) strand: f(orward)/r(everse)
+> (4)-(6) Methlyation heterogeneity for each sample specified by the column header
 
 
 
