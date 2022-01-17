@@ -46,8 +46,8 @@ MeH users guide is available as a [PDF file](./Manual.pdf), containing the detai
 MeH can be installed for Linux, macOS, or Windows by either compiling  from source which has the advantage that it will be optimized to the specific system:
 
 ```bash
-git clone https://github.com/britishcoffee/MeHscr.git
-cd MeHscr
+git clone https://github.com/britishcoffee/MeH.git
+cd MeH
 ```
 ## Methylation heterogeneity profiling
 Use the scrpit **MeHscr.py** to calculated the methylation heterogeneity.
