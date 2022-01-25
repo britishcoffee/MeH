@@ -228,6 +228,26 @@ CG=CG[which(apply(CG,1,function(x) sum(is.na(x)))==0),]
 6     1 4200      f 0.0000000 0.0000000 10.00000 10.00000
 ```
 
+Optional. To make result from MeH viewable on IGV,
+
+```R
+# reverse strand as negative MeH
+for (i in 1:dim(CG)[2]){
+  if (!colnames(CG)[i] %in% c("chrom","bin","strand")){
+  write.table(x = cbind(CG$chrom,format(CG$bin, scientific = FALSE),
+                      format(CG$bin+1, scientific = FALSE),CG[,i]*(2*(CG$strand=="f")-1)), 
+            file= gsub(" ","",paste("PW_",colnames(CG)[i],".bedGraph")), row.names = FALSE, sep = " ",col.names = FALSE,quote = FALSE)
+  }}
+
+# reverse strand as MeH but starting at position = bin+1
+for (i in 1:dim(CG)[2]){
+  if (!colnames(CG)[i] %in% c("chrom","bin","strand")){
+    write.table(x = cbind(CG$chrom,format(CG$bin+(CG$strand=="r"), scientific = FALSE),
+                          format(CG$bin+1+(CG$strand=="r"), scientific = FALSE),CG[,i]), 
+                file= gsub(" ","",paste("PW_",colnames(CG)[i],".bedGraph")), row.names = FALSE, sep = " ",col.names = FALSE,quote = FALSE)
+  }}
+```
+
 2. Define conditions of all samples
 
 ```R
