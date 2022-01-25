@@ -228,7 +228,7 @@ CG=CG[which(apply(CG,1,function(x) sum(is.na(x)))==0),]
 6     1 4200      f 0.0000000 0.0000000 10.00000 10.00000
 ```
 
-Optional. To make result from MeH viewable on IGV,
+Optional. To view results on IGV, use the code below to generate .bedGraph for all libraries.
 
 ```R
 # reverse strand as negative MeH
@@ -247,6 +247,8 @@ for (i in 1:dim(CG)[2]){
                 file= gsub(" ","",paste("PW_",colnames(CG)[i],".bedGraph")), row.names = FALSE, sep = " ",col.names = FALSE,quote = FALSE)
   }}
 ```
+
+This will give you n filed with extension .bedGraph which can be opened using IGV.
 
 2. Define conditions of all samples
 
