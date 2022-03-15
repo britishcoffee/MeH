@@ -1,4 +1,4 @@
-# MeH :sheep:
+# MeHscr :sheep:
 
 :mega: DNA methylation heterogeneity (**MeH**) measures the epigenetic diversity within a cell population where the behaviour of individual cells can vary as differential responses to the environmental stimuli or dynamic progression of cellular development.
 
@@ -24,6 +24,12 @@
 ### Documentation
 
 MeH users guide is available as a [PDF file](./Manual.pdf), containing the detail of each step. For questions please open an issue on [GitHub](https://github.com/britishcoffee/MeHscr/issues) or [contact me](#contact).
+
+### Tutorial
+
+Please follow the [tutorial](./Tutorial.md) of example use case.
+
+
 
 ##  Table of Contents
 
