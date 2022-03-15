@@ -47,12 +47,16 @@ Transform Results.csv to .bedGraph for IGV visualisation
 * CG_Results.csv
 
 ```sh
-Rscript tobed.R -m /MeHdata/CG_Results.csv -o /MeHdata/Meh_result.bedGraph
+Rscript tobed.R -m ./MeHdata/CG_Results.csv 
 ```
 
 ##### output
 
 * Meh_result.bedGraph
+  * PW_AT31test.bedGraph
+  * PW_AT33test.bedGraph
+  * PW_AT35test.bedGraph
+  * PW_AT37test.bedGraph
 
 
 
@@ -63,10 +67,11 @@ finding DHR
 * Results.csv
 
 ```sh
-Rscript finddhr.R -m /MeHdata/Results.csv -s A,B -r 2 -c 4
+Rscript finddhr.R -m ./MeHdata/CG_Results_test.csv -g ./MeHdata/genelist.txt -o ./MeHdata/CG -s W,W,D,D -p 1000 
 ```
 
 ##### output
 
-* DHR.csv
+* CG_DHR_Result.csv shows the list of DHR in down/up regulated gene/propoter
+* CG_MeH_Result.csv shows the table with the differnece of MeH regions
 

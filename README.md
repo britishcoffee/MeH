@@ -220,20 +220,10 @@ findgene = function(position) {
 1. Load files for analysis by first setting the work directory to where your files are located
 
 ```R
-CG <- read.csv('MeHdata/CG_Results_test.csv',header=TRUE)
-CG=CG[which(apply(CG,1,function(x) sum(is.na(x)))==0),]
+Rscript tobed.R -m ./MeHdata/CG_Results.csv 
 ```
 
-```R
-> head(CG)
-  chrom  bin strand  AT31test  AT33test AT37test AT35test
-1     1  600      f 1.4142100 4.6827400 11.79846 12.17126
-2     1  600      r 2.6795800 2.1208600 13.73091 12.77923
-3     1 1000      r 3.8819800 4.9631450 16.54558 14.10241
-4     1 2600      r 0.0000000 0.7071050 10.00000 10.00000
-5     1 3800      f 0.3304952 0.2571291 10.00000 10.18446
-6     1 4200      f 0.0000000 0.0000000 10.00000 10.00000
-```
+
 
 Optional. To view results on IGV, use the code below to generate .bedGraph for all libraries.
 

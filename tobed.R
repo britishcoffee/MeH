@@ -16,27 +16,33 @@ cat("[",format(Sys.time(), "%X"),"]","Start proccessing","\n")
 p <- arg_parser("MeH result file to .bedGraph")
 
 # Add command line arguments
-p <- add_argument(p,"-m","--Meh", help="input Meh resultes csv file", type="character")
-p <- add_argument(p,"-o", "--output", help="output to bedGraph file")
+p <- add_argument(p,"-m","--Meh", help="input Meh resultes csv file")
+# p <- add_argument(p,"-o", "--output", help="output to bedGraph file")
 p <- add_argument(p,"-r", "--reverse", default="all" ,help="reverse strand as negative MeH")
 # Parse the command line arguments
 args <- parse_args(p)
 
-CG <- read.csv(args$Meh,header=TRUE)
+CG <- read.csv(args$m,header=TRUE)
 CG=CG[which(apply(CG,1,function(x) sum(is.na(x)))==0),]
 
-if( args$reverse == "all") {
+if( args$r == "all") {
   for (i in 1:dim(CG)[2]){
-  if (!colnames(CG)[i] %in% c("chrom","bin","strand")){
-    write.table(x = cbind(CG$chrom,format(CG$bin+(CG$strand=="r"), scientific = FALSE),
-                          format(CG$bin+1+(CG$strand=="r"), scientific = FALSE),CG[,i]), 
-                file= gsub(" ","",paste("PW_",colnames(CG)[i],".bedGraph")), row.names = FALSE, sep = " ",col.names = FALSE,quote = FALSE)
-  }}       
-} if (args$reverse == "n") {
+    if (!colnames(CG)[i] %in% c("chrom","bin","strand")){
+      write.table(x = cbind(CG$chrom,format(CG$bin+(CG$strand=="r"), scientific = FALSE),
+                            format(CG$bin+1+(CG$strand=="r"), scientific = FALSE),CG[,i]),
+                  file= gsub(" ","",paste("PW_",colnames(CG)[i],".bedGraph")), row.names = FALSE, sep = " ",col.names = FALSE,quote = FALSE)
+    }}
+}
+if (args$r == "n") {
   for (i in 1:dim(CG)[2]){
-  if (!colnames(CG)[i] %in% c("chrom","bin","strand")){
-  write.table(x = cbind(CG$chrom,format(CG$bin, scientific = FALSE),
-                      format(CG$bin+1, scientific = FALSE),CG[,i]*(2*(CG$strand=="f")-1)), 
-            file= gsub(" ","",paste("PW_",colnames(CG)[i],".bedGraph")), row.names = FALSE, sep = " ",col.names = FALSE,quote = FALSE)
-  }}
-} 
+    if (!colnames(CG)[i] %in% c("chrom","bin","strand")){
+      write.table(x = cbind(CG$chrom,format(CG$bin, scientific = FALSE),
+                            format(CG$bin+1, scientific = FALSE),CG[,i]*(2*(CG$strand=="f")-1)),
+                  file= gsub(" ","",paste("PW_",colnames(CG)[i],".bedGraph")), row.names = FALSE, sep = " ",col.names = FALSE,quote = FALSE)
+    }}
+}
+
+cat("[",format(Sys.time(), "%X"),"]","Done.","\n")
+
+
+  
