@@ -92,7 +92,7 @@ $ python MeHscr.py -h
 
 ```
 
-##### Examples
+##### Example
 
 ```ruby
 # 'CG' only with window size of 4 cytosines and 4 cores parallel processing (default score is pairwise-similarity-based method, default distance between methylation patterns is Hamming distance)
@@ -153,101 +153,93 @@ chrom,bin,strand,AT31test,AT33test,AT37test,AT35test
 
 
 
-## Subsequent analysis
+## Visualization
 
-Use the function of scrpit **DHR.R** to find differentailly heterogeneity regions.
+Use the scrpit **tobed.R** to view results on IGV, use the code below to generate .bedGraph for all libraries.
 
-> :grey_exclamation: under R envrionment. 
-
-##### Required packages
-
-```R
-# install.packages("roperators")
-library(roperators)
-# install.packages("dplyr")
-library(dplyr)
-# install.packages("foreach")
-library(foreach)
-# install.packages("doParallel")
-library(doParallel)
-```
-
-##### Required Functions
-
-```R
-MeH.t=function(vector,conditions,compare) {
-  ind1<-which(conditions == compare[1])+3 
-  ind2<-which(conditions == compare[2])+3
-  vector=as.data.frame(vector)
-  mean2=mean(as.numeric(vector[ind2]),na.rm=TRUE)
-  mean1=mean(as.numeric(vector[ind1]),na.rm=TRUE)
-  diff=mean2-mean1
-  if(sd(vector[ind1])<1e-5 && sd(vector[ind2])<1e-5) 
-    return(data.frame(chrom=vector[1],pos=vector[2],strand=vector[3],delta=diff,pvalue=NaN,mean2=mean2,mean1=mean1))
-  else {
-    out=t.test(vector[ind1],vector[ind2])
-    return(data.frame(chrom=vector[1],pos=vector[2],strand=vector[3],delta=out$est[2]-out$est[1],pvalue=as.numeric(out$p.value),mean2=out$est[2],mean1=out$est[1]))
-  }
-}
-
-findgene = function(position) {
-  chr=as.character(position[,1])
-  #message(chr)
-  BP=as.numeric(position[,2])
-  #message(BP)
-  St=as.character(position[,3])
-  Gene=geneloc$gene[which((geneloc$TSS<=BP)*(geneloc$TES>=BP)*(as.character(geneloc$chrom)==chr)*(as.character(geneloc$strand)==as.character(St))==1)][1]
-  #user can define theie own promoter region [default: 1000]
-  if (St=='f') {
-    promoter=geneloc$gene[which((geneloc$TSS-1000<=BP)*(geneloc$TSS+1000>=BP)*(as.character(geneloc$chrom)==chr)*(geneloc$strand=="f")==1)][1]
-  }
-  if (St=='r') {
-    promoter=geneloc$gene[which((geneloc$TES-1000<=BP)*(geneloc$TES+1000>=BP)*(as.character(geneloc$chrom)==chr)*(geneloc$strand=="r")==1)][1]
-  }
-  return(list(chrom=chr,bin=BP,Gene=Gene,Promoter=promoter,strand=St))
-}
-```
+> :grey_exclamation:used as command-line in your terminal.
 
 ##### Input
 
-* Results.csv files for summary results
-* genelist.txt
+* Results.csv files after calculating the methylation heterogeneity.
 
-> genelist.txt can be modified based on gene.gff file consists of gene, chromosome, TSS, TES, and strand.
+##### Usage
+
+```ruby
+$ Rscript tobed.R -h
+
+usage: tobed.R [--] [--help] [--opts OPTS] [-m -M [-r -R
+  
+MeH result file to .bedGraph
+
+flags:
+  -h, --help  show this help message and exit
+
+optional arguments:
+  -x, --opts  RDS file containing argument values
+  -m,    input Meh resultes csv file 
+  -r,    reverse strand as negative MeH [default: all]
+```
+
+
 
 ##### Example
 
-1. Load files for analysis by first setting the work directory to where your files are located
-
-```R
-Rscript tobed.R -m ./MeHdata/CG_Results.csv 
-```
-
-
-
-Optional. To view results on IGV, use the code below to generate .bedGraph for all libraries.
-
-```R
+```ruby
 # reverse strand as negative MeH
-for (i in 1:dim(CG)[2]){
-  if (!colnames(CG)[i] %in% c("chrom","bin","strand")){
-  write.table(x = cbind(CG$chrom,format(CG$bin, scientific = FALSE),
-                      format(CG$bin+1, scientific = FALSE),CG[,i]*(2*(CG$strand=="f")-1)), 
-            file= gsub(" ","",paste("PW_",colnames(CG)[i],".bedGraph")), row.names = FALSE, sep = " ",col.names = FALSE,quote = FALSE)
-  }}
-
+Rscript tobed.R -m ./MeHdata/CG_Results.csv 
 # reverse strand as MeH but starting at position = bin+1
-for (i in 1:dim(CG)[2]){
-  if (!colnames(CG)[i] %in% c("chrom","bin","strand")){
-    write.table(x = cbind(CG$chrom,format(CG$bin+(CG$strand=="r"), scientific = FALSE),
-                          format(CG$bin+1+(CG$strand=="r"), scientific = FALSE),CG[,i]), 
-                file= gsub(" ","",paste("PW_",colnames(CG)[i],".bedGraph")), row.names = FALSE, sep = " ",col.names = FALSE,quote = FALSE)
-  }}
+Rscript tobed.R -m ./MeHdata/CG_Results.csv -r n
 ```
 
-This will give you n filed with extension .bedGraph which can be opened using IGV.
+##### Output
 
-2. Define conditions of all samples
+* the .bedGraph for each sample and this will give you n filed with extension .bedGraph which can be opened using IGV.
+
+
+
+## Subsequent analysis
+
+Use the scrpit **finddhr.R** to find the differential hetergeneous regions.
+
+> :grey_exclamation:used as command-line in your terminal.
+
+##### Input
+
+* Results.csv files after calculating the methylation heterogeneity.
+* genelist.txt 
+
+```ruby
+$ Rscript finddhr.R -h
+
+usage: finddhr.R [--] [--help] [--opts OPTS] [-m -M [-s -S [-g -G [-o
+       -O [-c -C [-p -P [-adjp -ADJP [-pvalue -PVALUE [-delta -DELTA
+
+Find DHR
+
+flags:
+  -h, --help        show this help message and exit
+
+optional arguments:
+  -x, --opts      RDS file containing argument values
+  -m,             input Meh resultes csv file [default: Meh]
+  -s,             Define conditions of all samples [default:conditions]
+  -g,             The gene list [default: genelist]
+  -o,             output gene list result csv file [default: DHR]
+  -c,             the number of core for analysis [default: 4]
+  -p,             the region of promoter [default: 1000]
+  -adjp,          Select differential heterogeneous regions based on adjust pvalue [default:  									0.05]
+  -pvalue,        Select differential heterogeneous regions based on pvalue [default: 0.05]
+  -delta,         Select differential heterogeneous regions based on delta [default: 1.4]
+```
+
+
+
+
+
+
+
+
 
 ```R
 # An example is for A vs B here

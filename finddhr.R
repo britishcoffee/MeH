@@ -106,14 +106,20 @@ DHG_Genebodys_up<-unique(unlist(genelist[which(Comp1$DHR.up==1),"Gene"])[!is.na(
 DHG_Genebodys_down<-unique(unlist(genelist[which(Comp1$DHR.down==1),"Gene"])[!is.na(unlist(genelist[which(Comp1$DHR.down==1),"Gene"]))])
 DHG_Promoter_up<-unique(unlist(genelist[which(Comp1$DHR.up==1),"Promoter"])[!is.na(unlist(genelist[which(Comp1$DHR.up==1),"Promoter"]))])
 DHG_Promoter_down<-unique(unlist(genelist[which(Comp1$DHR.down==1),"Promoter"])[!is.na(unlist(genelist[which(Comp1$DHR.down==1),"Promoter"]))])
-cat(DHG_Genebodys_up)
-cat(DHG_Genebodys_down)
-cat(DHG_Promoter_up)
-cat(DHG_Promoter_down)
+
 
 infile1 <- as.character(gsub(" ", "", paste(args$o,"_MeH_Result",".csv")))
 infile2 <- as.character(gsub(" ", "", paste(args$o,"_DHR_Result",".csv")))
 
 write.csv(Result_whole,infile1,col.names=T,row.names=F)
+
+result <- file(infile2)
+writeLines(paste("DHG Genebodys up: ",paste(DHG_Genebodys_up,collapse= ', ')), result)
+close(result)
+write(paste("DHG Genebodys down: ",paste(DHG_Genebodys_down,collapse= ', ')),infile2,append=TRUE)
+write(paste("DHG Promoter up: ", paste(DHG_Promoter_up,collapse= ', ')),infile2,append=TRUE)
+write(paste("DHG Promoter down: ",paste(DHG_Promoter_down,collapse= ', ')),infile2,append=TRUE)
+
+
 cat("[",format(Sys.time(), "%X"),"]","Done!","\n")
 
