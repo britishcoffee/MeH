@@ -46,6 +46,7 @@ Please follow the [tutorial](./Tutorial.md) of example use case.
 * pandas package 0.24 +
 * pysam package 0.16.0.1 +
 * joblib package
+* R 3.4 +
 
 ## Installation
 

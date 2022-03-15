@@ -12,12 +12,13 @@ foo <- function(x){
 }
 foo( c("argparser" , "roperators", "dplyr", "foreach","doParallel") )
 
+cat("[",format(Sys.time(), "%X"),"]","Start proccessing","\n")
 p <- arg_parser("MeH result file to .bedGraph")
 
 # Add command line arguments
-p <- add_argument("-m","--Meh", help="input Meh resultes csv file", type="character")
-p <- add_argument("-o", "--output", help="output to bedGraph file")
-p <- add_argument("-r", "--reverse", default="all" ,help="reverse strand as negative MeH")
+p <- add_argument(p,"-m","--Meh", help="input Meh resultes csv file", type="character")
+p <- add_argument(p,"-o", "--output", help="output to bedGraph file")
+p <- add_argument(p,"-r", "--reverse", default="all" ,help="reverse strand as negative MeH")
 # Parse the command line arguments
 args <- parse_args(p)
 

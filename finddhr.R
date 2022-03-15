@@ -48,11 +48,11 @@ findgene = function(position) {
 p <- arg_parser("Find DHR")
 
 # Add command line arguments
-p <- add_argument("-m","--Meh", help="input Meh resultes csv file", type="character")
-p <- add_argument("-s","--conditions", help="Define conditions of all samples", type="character")
-p <- add_argument("-r","--rep", help="The replication of samples", type="character")
-p <- add_argument("-o", "--output", help="output gene list result csv file", default="DEG")
-p <- add_argument("-c", "--core", help="the number of core for analysis", default="4")
+p <- add_argument(p,"-m","--Meh", help="input Meh resultes csv file", type="character")
+p <- add_argument(p,"-s","--conditions", help="Define conditions of all samples", type="character")
+p <- add_argument(p,"-r","--rep", help="The replication of samples", type="character")
+p <- add_argument(p,"-o", "--output", help="output gene list result csv file", default="DHR")
+p <- add_argument(p,"-c", "--core", help="the number of core for analysis", default="4")
 
 # Parse the command line arguments
 args <- parse_args(p)
@@ -63,7 +63,7 @@ CG <- read.csv(args$Meh,header=TRUE)
 CG=CG[which(apply(CG,1,function(x) sum(is.na(x)))==0),]
 
 #### Define conditions of all samples; i.e., A and B for 2 conditions, each with two replicates, samples 1 and 2 are replicates of A and samples 3 and 4 are replicates for B. This is for comparisons to be carried out later on
-conditions <- rep(args$conditions,args$rep)
+conditions <- rep(c(args$conditions),args$rep)
 
 #### Calculate t-statistics and p-values for all bins between user specified conditions
 registerDoParallel(cores=args$core)

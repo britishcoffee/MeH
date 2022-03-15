@@ -30,7 +30,11 @@ python MeHscr.py -w 4 -c 4 --CG
 
 * MeHscreening.log 
 * /MeHdata/sample.0.csv files for each sample
-* /MeHdata/Results.csv files for summary results
+  * CG_AT31test_0.csv
+  * CG_AT33test_0.csv
+  * CG_AT35test_0.csv
+  * CG_AT37test_0.csv
+* /MeHdata/CG_Results.csv files for summary results
 
 
 
@@ -40,10 +44,10 @@ Transform Results.csv to .bedGraph for IGV visualisation
 
 ##### input
 
-* Results.csv
+* CG_Results.csv
 
 ```sh
-Rscript tobed.R -m /MeHdata/Results.csv -o /MeHdata/Meh_result.bedGraph
+Rscript tobed.R -m /MeHdata/CG_Results.csv -o /MeHdata/Meh_result.bedGraph
 ```
 
 ##### output
@@ -59,7 +63,7 @@ finding DHR
 * Results.csv
 
 ```sh
-Rscript finddhr.R -m /MeHdata/Results.csv -s A,B -r 2 
+Rscript finddhr.R -m /MeHdata/Results.csv -s A,B -r 2 -c 4
 ```
 
 ##### output
