@@ -245,10 +245,10 @@ Rscript finddhr.R -m ./MeHdata/CG_Results_test.csv -g ./MeHdata/genelist.txt -o 
 * CG_DHR_Result.csv shows the list of DHR in down/up regulated gene/promoter
 
 ```R
-DHR Genebodys up:  WASH7P, FAM138F, ATP1A1, GBP4
-DHR Genebodys down:  CHI3L1, DDX11L1, ATP1A1
-DHR Promoter up:  WASH7P, MIR1302-10, FAM138F, ATP1A1
-DHR Promoter down:  CHI3L1, DDX11L1, MIR1302-10
+DHG Genebodys up:  CHI3L1, DDX11L1, WASH7P, FAM138F, ATP1A1, GBP4
+DHG Genebodys down:
+DHG Promoter up:  CHI3L1, DDX11L1, WASH7P, MIR1302-10, FAM138F, ATP1A1
+DHG Promoter down:
 ```
 
 
