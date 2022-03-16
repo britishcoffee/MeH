@@ -44,7 +44,7 @@ Transform Results.csv to .bedGraph for IGV visualisation
 
 ##### input
 
-* CG_Results.csv
+* MeHdata/CG_Results.csv files
 
 ```sh
 Rscript tobed.R -m ./MeHdata/CG_Results.csv 
@@ -64,7 +64,8 @@ finding DHR
 
 ##### input
 
-* Results.csv
+* MeHdata/CG_Results.csv files
+* genelist.txt for match the gene
 
 ```sh
 Rscript finddhr.R -m ./MeHdata/CG_Results_test.csv -g ./MeHdata/genelist.txt -o ./MeHdata/CG -s W,W,D,D -p 1000 
