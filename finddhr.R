@@ -99,8 +99,7 @@ geneloc$gene<-as.character(geneloc$gene)
 genelist<-as.data.frame(foreach(i = 1:dim(Comp1)[1],.combine = rbind) %dopar% findgene(Comp1[i,c("chrom","bin","strand")]))
 genelist$strand[as.character(genelist$strand)=="1"]<-"f"
 genelist$strand[as.character(genelist$strand)=="2"]<-"r"
-genelist <- as.data.frame(genelist)
-Comp1 <- as.data.frame(Comp1)
+
 Result_whole<-merge(Comp1,genelist,by=c("chrom","bin","strand"))
 Result_whole$Gene <- unlist(Result_whole$Gene)
 Result_whole$Promoter <- unlist(Result_whole$Promoter)
@@ -117,7 +116,7 @@ infile1 <- as.character(gsub(" ", "", paste(args$o,"_MeH_Result",".csv")))
 infile2 <- as.character(gsub(" ", "", paste(args$o,"_DHR_Result",".csv")))
 
 Result_whole <- Result_whole[,-c(9:11)]
-write.csv(f,infile1,row.names=F)
+write.csv(Result_whole,infile1,row.names=F)
 
 result <- file(infile2)
 writeLines(paste("DHG Genebodys up: ",paste(DHG_Genebodys_up,collapse= ', ')), result)
