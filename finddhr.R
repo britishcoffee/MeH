@@ -99,6 +99,8 @@ geneloc$gene<-as.character(geneloc$gene)
 genelist<-as.data.frame(foreach(i = 1:dim(Comp1)[1],.combine = rbind) %dopar% findgene(Comp1[i,c("chrom","bin","strand")]))
 genelist$strand[as.character(genelist$strand)=="1"]<-"f"
 genelist$strand[as.character(genelist$strand)=="2"]<-"r"
+genelist <- as.data.frame(genelist)
+Comp1 <- as.data.frame(Comp1)
 Result_whole<-merge(Comp1,genelist,by=c("chrom","bin","strand"))
 
 #### Get the up/down regulted DHG gene/promoter lists ####
