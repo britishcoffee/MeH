@@ -36,10 +36,10 @@ Please follow the [tutorial](./Tutorial.md) of example use case.
 * [System requirements](#system-requirements) 
 * [Installation](#Installation)
 * [Methylation heterogeneity profiling](#methylation-heterogeneity-profiling)
-   * [Usages](#usages) 
-   * [Examples](#examples) 
+* [Visualization of MeH](#Visualization-of-MeH)
+
 * [Subsequent analysis](#subsequent-analysis)
-   *  [Example](#example)
+* [Visualization of DHR](#Visualization-of-DHR)
 
 ## System requirements
 * python 2.7 + 
@@ -56,7 +56,10 @@ MeH can be installed for Linux, macOS, or Windows by either compiling  from sour
 git clone https://github.com/britishcoffee/MeH.git
 cd MeH
 ```
+
+
 ## Methylation heterogeneity profiling
+
 Use the scrpit **MeHscr.py** to calculated the methylation heterogeneity.
 
 > :grey_exclamation:used as command-line in your terminal.
@@ -153,6 +156,10 @@ chrom,bin,strand,AT31test,AT33test,AT37test,AT35test
 
 
 
+:exclamation: If there is too many missing data. [BSImp](./https://github.com/britishcoffee/BSImp) is a tool for imputation recovers partially observed methylation patterns for the analysis of methylation heterogeneity at a large proportion of regions genomewide and also estimates methylation levels accurately. 
+
+
+
 ## Visualization of MeH
 
 Use the scrpit **tobed.R** to view results on IGV, use the code below to generate .bedGraph for all libraries.
@@ -180,8 +187,6 @@ optional arguments:
   -m,    input Meh resultes csv file 
   -r,    reverse strand as negative MeH [default: all]
 ```
-
-
 
 ##### Example
 
@@ -251,8 +256,6 @@ DHG Promoter up:  CHI3L1, DDX11L1, WASH7P, MIR1302-10, FAM138F, ATP1A1
 DHG Promoter down:
 ```
 
-
-
 * CG_MeH_Result.csv shows the table with the differnece of MeH regions
 
 ```R
@@ -293,11 +296,7 @@ Use the scrpit **[IGV](./https://software.broadinstitute.org/software/igv/downlo
 
 
 
-
-
 ## Contact
-
-
 
 [<img src="https://avatars.githubusercontent.com/u/30218118?v=4" width="100">](ytchang.sabrina@gmail.com) 
 
