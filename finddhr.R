@@ -99,7 +99,7 @@ geneloc$gene<-as.character(geneloc$gene)
 genelist<-as.data.frame(foreach(i = 1:dim(Comp1)[1],.combine = rbind) %dopar% findgene(Comp1[i,c("chrom","bin","strand")]))
 genelist$strand[as.character(genelist$strand)=="1"]<-"f"
 genelist$strand[as.character(genelist$strand)=="2"]<-"r"
-# Result_whole<-merge(Comp1,genelist,by=c("chrom","bin","strand"))
+Result_whole<-merge(Comp1,genelist,by=c("chrom","bin","strand"))
 
 #### Get the up/down regulted DHG gene/promoter lists ####
 DHG_Genebodys_up<-unique(unlist(genelist[which(Comp1$DHR.up==1),"Gene"])[!is.na(unlist(genelist[which(Comp1$DHR.up==1),"Gene"]))])
@@ -111,8 +111,8 @@ DHG_Promoter_down<-unique(unlist(genelist[which(Comp1$DHR.down==1),"Promoter"])[
 infile1 <- as.character(gsub(" ", "", paste(args$o,"_MeH_Result",".csv")))
 infile2 <- as.character(gsub(" ", "", paste(args$o,"_DHR_Result",".csv")))
 
-#Result_whole <- Result_whole[,-c(9:11)]
-write.csv(Comp1,infile1,row.names=F)
+Result_whole <- Result_whole[,-c(9:11)]
+write.csv(Result_whole,infile1,row.names=F)
 
 result <- file(infile2)
 writeLines(paste("DHG Genebodys up: ",paste(DHG_Genebodys_up,collapse= ', ')), result)
