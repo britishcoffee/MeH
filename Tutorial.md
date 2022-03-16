@@ -72,6 +72,6 @@ Rscript finddhr.R -m ./MeHdata/CG_Results_test.csv -g ./MeHdata/genelist.txt -o 
 
 ##### output
 
-* CG_DHR_Result.csv shows the list of DHR in down/up regulated gene/propoter
+* CG_DHR_Result.csv shows the list of DHR in down/up regulated genes/promoters
 * CG_MeH_Result.csv shows the table with the differnece of MeH regions
 

@@ -153,7 +153,7 @@ chrom,bin,strand,AT31test,AT33test,AT37test,AT35test
 
 
 
-## Visualization
+## Visualization of MeH
 
 Use the scrpit **tobed.R** to view results on IGV, use the code below to generate .bedGraph for all libraries.
 
@@ -200,14 +200,14 @@ Rscript tobed.R -m ./MeHdata/CG_Results.csv -r n
 
 ## Subsequent analysis
 
-Use the scrpit **finddhr.R** to find the differential hetergeneous regions.
+Use the scrpit **finddhr.R** to find the differential hetergeneous regions (DHR).
 
 > :grey_exclamation:used as command-line in your terminal.
 
 ##### Input
 
 * Results.csv files after calculating the methylation heterogeneity.
-* genelist.txt 
+* genelist.txt with each row representing a gene and consists of gene name, chromosome ,strand, TSS,and TES.
 
 ```ruby
 $ Rscript finddhr.R -h
@@ -222,10 +222,10 @@ flags:
 
 optional arguments:
   -x, --opts      RDS file containing argument values
-  -m,             input Meh resultes csv file [default: Meh]
-  -s,             Define conditions of all samples [default:conditions]
-  -g,             The gene list [default: genelist]
-  -o,             output gene list result csv file [default: DHR]
+  -m,             input Meh resultes csv file 
+  -s,             Define conditions of all samples 
+  -g,             The gene list
+  -o,             output gene list result csv file 
   -c,             the number of core for analysis [default: 4]
   -p,             the region of promoter [default: 1000]
   -adjp,          Select differential heterogeneous regions based on adjust pvalue [default:  									0.05]
@@ -233,131 +233,65 @@ optional arguments:
   -delta,         Select differential heterogeneous regions based on delta [default: 1.4]
 ```
 
+##### Example
 
-
-
-
-
-
-
-
-```R
-# An example is for A vs B here
-conditions <- c("A","B","B","A")
-```
-
-3. Calculate t-statistics and p-values for all bins between user specified conditions
-
-```R
-registerDoParallel(cores=4)
-# Compare condition B with A
-Comp1<-data.frame(foreach(i = 1:dim(CG)[1],.combine = rbind) %dopar% 
-                      MeH.t(CG[i,],conditions=conditions,c("A","B")))
-Comp1$padj=p.adjust(Comp1$pvalue)
-stopImplicitCluster()
-```
-
-4. Select differential heterogeneous regions based on user specified conditions
-
-```R
-#  i.e., p-value of 0.05 and delta of 1.4 (positive or negative)
-Comp1$DHR <- (Comp1$padj<0.05)*(abs(Comp1$delta)>1.4)
-Comp1$DHR <- (Comp1$pvalue<0.05)*(abs(Comp1$delta)>1.4)
-Comp1$DHR.up <- (Comp1$pvalue<0.05)*(Comp1$delta>1.4)
-Comp1$DHR.down <- (Comp1$pvalue<0.05)*(Comp1$delta<(-1.4))
-```
-
-```R
-> head(Comp1)
-  chrom  bin strand      delta    pvalue     mean2     mean1 padj DHR DHR.up DHR.down
-1     1  600      f  1.3810075 0.4527029 3.1976300 1.8166225    1   0      0        0
-2     1  600      r  0.3530650 0.6162005 3.1108250 2.7577600    1   0      0        0
-3     1 1000      r  1.7137125 0.2774109 5.7121800 3.9984675    1   0      0        0
-4     1 2600      r  0.3535525 0.5000000 0.3535525 0.0000000    1   0      0        0
-5     1 3800      f -0.1289142 0.4951501 0.1285645 0.2574787    1   0      0        0
-6     1 4200      f  0.0000000       NaN 0.0000000 0.0000000  NaN  NA     NA       NA
-```
-
-5. DHG analysis if bed file is given as .txt with each row representing a gene and consists of gene name, chromosome, TSS, TES and strand
-
-```R
-geneloc <- read.table('MeHdata/genelist.txt',header=T)
-colnames(geneloc) <- c("gene","chrom","TSS","TES","strand")
-geneloc$strand<-as.character(geneloc$strand)
-#geneloc$strand[as.character(geneloc$strand)=="+"] <- "f"
-#geneloc$strand[as.character(geneloc$strand)=="-"] <- "r"
-geneloc$gene<-as.character(geneloc$gene)
-```
-```R
-> head(geneloc)
-     gene chrom strand       TSS       TES
-17 CHI3L1     1      r      6500      7000
-20 ATP1A1     1      f     55000     59200
-33 CPSF3L     1      r   1246964   1260067
-34   GBP5     1      r  89724633  89738544
-36   GBP4     1      r     92000    100200
-38  FCRL3     1      r 157647977 157670647
-```
-
-6. Match the gene from provided gene lists to the regions.
-
-```R
-genelist <- foreach(i = 1:dim(Comp1)[1],.combine = rbind) %dopar% findgene(Comp1[i,c("chrom","bin","strand")]) 
-```
-
-```R
-> genelist[20:25,]
-          chrom bin   Gene      Promoter strand
-result.20 "1"   13800 "DDX11L1" "NA"     "f"   
-result.21 "1"   20200 "NA"      "NA"     "f"   
-result.22 "1"   21000 "NA"      "NA"     "f"   
-result.23 "1"   21000 "WASH7P"  "NA"     "r"   
-result.24 "1"   21400 "NA"      "NA"     "f"   
-result.25 "1"   21400 "WASH7P"  "NA"     "r"  
-```
-
-```R
-Result_whole<-merge(Comp1,genelist,c("chrom","bin","strand"))
-```
-```R
-> head(Result_whole)
-  chrom   bin strand       delta     pvalue     mean2     mean1 padj DHR DHR.up DHR.down    Gene Promoter
-1     1  1000      r  1.71371250 0.27741094 5.7121800 3.9984675    1   0      0        0      NA       NA
-2     1 12200      f -0.30304500 0.50000000 0.0000000 0.3030450    1   0      0        0 DDX11L1  DDX11L1
-3     1 12200      r -0.28284200 0.53267809 0.3142689 0.5971109    1   0      0        0      NA       NA
-4     1 12600      f  0.24748675 0.09033447 0.3889077 0.1414210    1   0      0        0 DDX11L1  DDX11L1
-5     1 12600      r -0.02142742 0.90030415 0.6285378 0.6499652    1   0      0        0      NA       NA
-6     1 13000      f  0.00000000        NaN 0.0000000 0.0000000  NaN  NA     NA       NA DDX11L1       NA
-```
-
-7. Get the up/down regulted DHG gene/promoter lists
-
-```R
-DHG_Genebodys_up<-unique(unlist(genelist[which(Comp1$DHR.up==1),"Gene"])[!is.na(unlist(genelist[which(Comp1$DHR.up==1),"Gene"]))])
-DHG_Genebodys_down<-unique(unlist(genelist[which(Comp1$DHR.down==1),"Gene"])[!is.na(unlist(genelist[which(Comp1$DHR.down==1),"Gene"]))])
-DHG_Promoter_up<-unique(unlist(genelist[which(Comp1$DHR.up==1),"Promoter"])[!is.na(unlist(genelist[which(Comp1$DHR.up==1),"Promoter"]))])
-DHG_Promoter_down<-unique(unlist(genelist[which(Comp1$DHR.down==1),"Promoter"])[!is.na(unlist(genelist[which(Comp1$DHR.down==1),"Promoter"]))])
-```
-
-```R
-result <- file("MeHdata/DHG.txt")
-writeLines(paste("DHG Genebodys up: ",paste(DHG_Genebodys_up,collapse= ', ')), result)
-close(result)
-write(paste("DHG Genebodys down: ",paste(DHG_Genebodys_down,collapse= ', ')),"MeHdata/DHG.txt",append=TRUE)
-write(paste("DHG Promoter up: ", paste(DHG_Promoter_up,collapse= ', ')),"MeHdata/DHG.txt",append=TRUE)
-write(paste("DHG Promoter down: ",paste(DHG_Promoter_down,collapse= ', ')),"MeHdata/DHG.txt",append=TRUE)
+```ruby
+# An example is for W vs D with two replicates under specified conditions after t-statistics and propoter regions are 1000 bp.
+Rscript finddhr.R -m ./MeHdata/CG_Results_test.csv -g ./MeHdata/genelist.txt -o ./MeHdata/CG -s W,W,D,D -p 1000
 ```
 
 ##### Output
 
-* DEG.txt
+* CG_DHR_Result.csv shows the list of DHR in down/up regulated gene/promoter
 
 ```R
-DHG Genebodys up:  
-DHG Genebodys down: CHI3L1
-DHG Promoter up:  
-DHG Promoter down: CHI3L1, ATP1A1
+DHR Genebodys up:  WASH7P, FAM138F, ATP1A1, GBP4
+DHR Genebodys down:  CHI3L1, DDX11L1, ATP1A1
+DHR Promoter up:  WASH7P, MIR1302-10, FAM138F, ATP1A1
+DHR Promoter down:  CHI3L1, DDX11L1, MIR1302-10
 ```
+
+
+
+* CG_MeH_Result.csv shows the table with the differnece of MeH regions
+
+```R
+chrom   bin strand     delta       pvalue    mean2      mean1       padj    Gene   Promoter
+1 13000      f 10.000000          NaN 10.00000 0.00000000        NaN DDX11L1         NA
+1 13800      f 10.000000          NaN 10.00000 0.00000000        NaN DDX11L1         NA
+1 20200      f  9.528597 0.0314695032 10.00000 0.47140333 1.00000000      NA         NA
+1 21000      f  9.686856 0.0205726428 10.00000 0.31314395 1.00000000      NA         NA
+1 21000      r  9.175044 0.0081767503 10.00000 0.82495583 0.98938678  WASH7P         NA
+1 21400      f 10.000000 0.0011092571 10.23570 0.23570167 0.18524594      NA         NA
+1 21400      r  9.469671 0.0356153305 10.00000 0.53032875 1.00000000  WASH7P         NA
+```
+
+>Format desctiptions:
+>
+>(1) chrom: chromsome
+>(2) bin: position (of bin), specified to be at the centre of the bin; i.e. 600 means (400,800]
+>(3) strand: f(orward)/r(everse)
+>(4) dalta: mean of condition A - mean of  condition B
+>(5) pvalue: p-value after t-test
+>(6) mean2: mean of  condition B
+>(7) mean1: mean of  condition A
+>(8) padj: adjust p-value
+>(9) Gene:  gene in this region
+>(10) Promoter:  promoter in this region
+
+
+
+## Visualization of DHR
+
+Use the scrpit **[IGV](./https://software.broadinstitute.org/software/igv/download)** to find the differential hetergeneous regions (DHR).
+
+##### Input
+
+* .bedGraph files after tobed.R
+
+<p align="center"><img src="./READMEimages/IGV.png"></p>
+
+
 
 
 

@@ -111,6 +111,7 @@ DHG_Promoter_down<-unique(unlist(genelist[which(Comp1$DHR.down==1),"Promoter"])[
 infile1 <- as.character(gsub(" ", "", paste(args$o,"_MeH_Result",".csv")))
 infile2 <- as.character(gsub(" ", "", paste(args$o,"_DHR_Result",".csv")))
 
+Result_whole <- Result_whole[,-c(9:11)]
 write.csv(Result_whole,infile1,col.names=T,row.names=F)
 
 result <- file(infile2)
