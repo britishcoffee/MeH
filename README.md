@@ -82,7 +82,7 @@ Use the scrpit **MeHscr.py** to calculated the methylation heterogeneity.
 $ python MeHscr.py -h
 	
   usage: MeHscr.py [-h] [-w WINDOWSIZE] [-c CORES] [-m MEH] [-d DIST] [--CG]
-                   [--CHG] [--CHH] [--opt] [--mlv]
+                   [--CHG] [--CHH] [--opt] [--mlv] [--imp]
 
   optional arguments:
     -h, --help            show this help message and exit
