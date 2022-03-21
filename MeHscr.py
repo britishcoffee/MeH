@@ -1,3 +1,5 @@
+# Mar21, 2022
+
 ##
 #---------------------------------------------------------------------
 # SERVER only input all files (.bam and .fa) output MeH matrix in .csv
@@ -183,13 +185,6 @@ def window_summ(pat,start,dis,chrom):
 def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'): 
     count=np.zeros((2**w,1))
     m=np.shape(pat)[0]
-    #print(count)
-    #for i in range(2**w): 
-    #    c = 0
-    #    for j in range(m):
-    #        if (all_pos[i,:]==pat.iloc[j,:]).sum()==w:
-    #            c += 1
-    #    count[i]=c
     pat=np.array(pat)
     if w==2:
         pat = Counter([str(i[0])+str(i[1]) for i in pat.astype(int).tolist()])
@@ -362,12 +357,10 @@ def impute(window,w):
             else:
                 s=random.sample(window[np.where(np.invert(np.isnan(window[:,pos])))[0],pos].tolist(), k=1)[0]
             window[part_ind[i],pos]=np.float64(s)
-            #print("win_part i =",window[part_ind[i],pos])
-            #print("s = ",np.float64(s))
     return window 
 
 
-def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
+def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2,imp=True):
     filename, file_extension = os.path.splitext(bamfile)
     sample = str.split(filename,'_')[0]
     coverage = cov_context = 0
@@ -410,7 +403,6 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
 
     
     neverr = never = True
-    #chr_lengths = fastafile.get_reference_length(chrom)
     
     # all methylation patterns for Methylation heterogeneity evaluation
     all_pos=np.zeros((2**w,w))
@@ -501,22 +493,21 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             # remove read ID
             meth = meth.drop('Qname',axis=1)
             # back up for imputation
-            methtemp = meth.copy()
-            # imputation by sliding window of 1 C
-            for i in range(0,meth.shape[1]-w+1,1):
-                window = meth.iloc[:,range(i,i+w)].values
-                # save methylation statuses before imputation
-                # check if eligible for imputation, impute
-                if enough_reads(window,w,complete=False):
-                    window=pd.DataFrame(data=impute(window,w))
-                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
-                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
-            # overwrite imputed window
-            meth = methtemp.copy()
+            if imp:
+                methtemp = meth.copy()
+                # imputation by sliding window of 1 C
+                for i in range(0,meth.shape[1]-w+1,1):
+                    window = meth.iloc[:,range(i,i+w)].values
+                    # save methylation statuses before imputation
+                    # check if eligible for imputation, impute
+                    if enough_reads(window,w,complete=False):
+                        window=pd.DataFrame(data=impute(window,w))
+                        ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                        methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+                # overwrite imputed window
+                meth = methtemp.copy()
             # Evaluate methylation level and methylation heterogeneity and append to result
             for i in range(0,w,1): # w windows
-            #for i in range(0,meth.shape[1]-w+1,1):
-            #if i<w:
                 window = meth.iloc[:,range(i,i+w)].values
                 # check if enough complete patterns for evaluating MeH
                 if enough_reads(window,w,complete=True):
@@ -550,19 +541,17 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
             meth = methbin.copy()
             meth = meth.drop('Qname',axis=1)
-            methtemp = meth.copy()
-            # impute once if valid
-            for i in range(0,meth.shape[1]-w+1,1):
-                window = meth.iloc[:,range(i,i+w)].values
-                # if eligible for imputation
-                if enough_reads(window,w,complete=False):
-                    window=pd.DataFrame(data=impute(window,w))
-                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
-                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
-            meth = methtemp.copy()
-            # compute coverage and output summary
-            # for i in range(0,meth.shape[1]-w+1,1):
-            #if i<w:
+            if imp:
+                methtemp = meth.copy()
+                # impute once if valid
+                for i in range(0,meth.shape[1]-w+1,1):
+                    window = meth.iloc[:,range(i,i+w)].values
+                    # if eligible for imputation
+                    if enough_reads(window,w,complete=False):
+                        window=pd.DataFrame(data=impute(window,w))
+                        ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                        methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+                meth = methtemp.copy()
             for i in range(0,w,1):
                 window = meth.iloc[:,range(i,i+w)].values
                 if enough_reads(window,w,complete=True):
@@ -592,15 +581,16 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
             meth = methbin.copy()
             meth = meth.drop('Qname',axis=1)
-            methtemp = meth.copy()
-            # impute once if valid
-            for i in range(0,meth.shape[1]-w+1,1):
-                window = meth.iloc[:,range(i,i+w)].values
-                if enough_reads(window,w,complete=False):
-                    window=pd.DataFrame(data=impute(window,w))
-                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
-                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
-            meth = methtemp.copy()        
+            if imp:
+                methtemp = meth.copy()
+                # impute once if valid
+                for i in range(0,meth.shape[1]-w+1,1):
+                    window = meth.iloc[:,range(i,i+w)].values
+                    if enough_reads(window,w,complete=False):
+                        window=pd.DataFrame(data=impute(window,w))
+                        ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                        methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+                meth = methtemp.copy()        
             # compute coverage and output summary
             for i in range(w-1,2*w-1,1):
             #for i in range(0,meth.shape[1]-w+1,1):
@@ -641,16 +631,17 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
             meth = methbin.copy()
             meth = meth.drop('Qname',axis=1)
-            methtemp = meth.copy()
-            # impute once if valid
-            for i in range(0,meth.shape[1]-w+1,1):
-                window = meth.iloc[:,range(i,i+w)].values
-                # if eligible for imputation
-                if enough_reads(window,w,complete=False):
-                    window=pd.DataFrame(data=impute(window,w))
-                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
-                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
-            meth = methtemp.copy()        
+            if imp:
+                methtemp = meth.copy()
+                # impute once if valid
+                for i in range(0,meth.shape[1]-w+1,1):
+                    window = meth.iloc[:,range(i,i+w)].values
+                    # if eligible for imputation
+                    if enough_reads(window,w,complete=False):
+                        window=pd.DataFrame(data=impute(window,w))
+                        ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                        methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+                meth = methtemp.copy()        
             # compute coverage and output summary
             for i in range(w-1,2*w-1,1):
                 window = meth.iloc[:,range(i,i+w)].values   
@@ -690,7 +681,7 @@ def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             
     #samfile.close()  
     
-def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
+def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2,imp=True):
     filename, file_extension = os.path.splitext(bamfile)
     sample = str.split(filename,'_')[0]
     coverage = cov_context = 0
@@ -810,16 +801,17 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
             meth = methbin.copy()
             meth = meth.drop('Qname',axis=1)
-            methtemp = meth.copy()
-            # impute once if valid
-            for i in range(0,meth.shape[1]-w+1,1):
-                window = meth.iloc[:,range(i,i+w)].values
-                # if eligible for imputation
-                if enough_reads(window,w,complete=False):
-                    window=pd.DataFrame(data=impute(window,w))
-                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
-                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
-            meth = methtemp.copy()
+            if imp:
+                methtemp = meth.copy()
+                # impute once if valid
+                for i in range(0,meth.shape[1]-w+1,1):
+                    window = meth.iloc[:,range(i,i+w)].values
+                    # if eligible for imputation
+                    if enough_reads(window,w,complete=False):
+                        window=pd.DataFrame(data=impute(window,w))
+                        ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                        methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+                meth = methtemp.copy()
             # compute coverage and output summary
             for i in range(0,w,1):
                 window = meth.iloc[:,range(i,i+w)].values
@@ -851,16 +843,17 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
             meth = methbin.copy()
             meth = meth.drop('Qname',axis=1)
-            methtemp = meth.copy()
-            # impute once if valid
-            for i in range(0,meth.shape[1]-w+1,1):
-                window = meth.iloc[:,range(i,i+w)].values
-                # if eligible for imputation
-                if enough_reads(window,w,complete=False):
-                    window=pd.DataFrame(data=impute(window,w))
-                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
-                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
-            meth = methtemp.copy()
+            if imp:
+                methtemp = meth.copy()
+                # impute once if valid
+                for i in range(0,meth.shape[1]-w+1,1):
+                    window = meth.iloc[:,range(i,i+w)].values
+                    # if eligible for imputation
+                    if enough_reads(window,w,complete=False):
+                        window=pd.DataFrame(data=impute(window,w))
+                        ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                        methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+                meth = methtemp.copy()
             # compute coverage and output summary
             for i in range(0,w,1):
                 window = meth.iloc[:,range(i,i+w)].values
@@ -892,16 +885,17 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
             meth = methbin.copy()
             meth = meth.drop('Qname',axis=1)
-            methtemp = meth.copy()
-            # impute once if valid
-            for i in range(0,meth.shape[1]-w+1,1):
-                window = meth.iloc[:,range(i,i+w)].values
-                # if eligible for imputation
-                if enough_reads(window,w,complete=False):
-                    window=pd.DataFrame(data=impute(window,w))
-                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
-                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
-            meth = methtemp.copy()        
+            if imp:
+                methtemp = meth.copy()
+                # impute once if valid
+                for i in range(0,meth.shape[1]-w+1,1):
+                    window = meth.iloc[:,range(i,i+w)].values
+                    # if eligible for imputation
+                    if enough_reads(window,w,complete=False):
+                        window=pd.DataFrame(data=impute(window,w))
+                        ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                        methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+                meth = methtemp.copy()        
             # compute coverage and output summary
             for i in range(w-1,2*w-1,1):
                 window = meth.iloc[:,range(i,i+w)].values
@@ -941,20 +935,17 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
             meth = methbin.copy()
             meth = meth.drop('Qname',axis=1)
-            methtemp = meth.copy()
-            # impute once if valid
-            for i in range(0,meth.shape[1]-w+1,1):
-                window = meth.iloc[:,range(i,i+w)].values
-                MC=(window==1).sum(axis=0)[0]
-                UC=(window==0).sum(axis=0)[0]
-                MU[0,i-w+1]=MC
-                MU[1,i-w+1]=UC
-                # if eligible for imputation
-                if enough_reads(window,w,complete=False):
-                    window=pd.DataFrame(data=impute(window,w))
-                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
-                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
-            meth = methtemp.copy()        
+            if imp:
+                methtemp = meth.copy()
+                # impute once if valid
+                for i in range(0,meth.shape[1]-w+1,1):
+                    window = meth.iloc[:,range(i,i+w)].values
+                    # if eligible for imputation
+                    if enough_reads(window,w,complete=False):
+                        window=pd.DataFrame(data=impute(window,w))
+                        ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                        methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+                meth = methtemp.copy()        
             # compute coverage and output summary
             for i in range(w-1,2*w-1,1):
                 window = meth.iloc[:,range(i,i+w)].values
@@ -993,7 +984,7 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
     return sample, coverage, cov_context, 'CHH'                        
     print("Done CHH for file %s: %s results obtained up to position chr %s: %s." % (filename,ResultPW.shape[0],chrom,pileupcolumn.pos))
             
-def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
+def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2,imp=True):
     filename, file_extension = os.path.splitext(bamfile)
     sample = str.split(filename,'_')[0]
     #directory = "Outputs/" + str(sample) + '.csv' #original filename of .bams
@@ -1111,16 +1102,17 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
             meth = methbin.copy()
             meth = meth.drop('Qname',axis=1)
-            methtemp = meth.copy()
-            # impute once if valid
-            for i in range(0,meth.shape[1]-w+1,1):
-                window = meth.iloc[:,range(i,i+w)].values
-                # if eligible for imputation
-                if enough_reads(window,w,complete=False):
-                    window=pd.DataFrame(data=impute(window,w))
-                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
-                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
-            meth = methtemp.copy()
+            if imp:
+                methtemp = meth.copy()
+                # impute once if valid
+                for i in range(0,meth.shape[1]-w+1,1):
+                    window = meth.iloc[:,range(i,i+w)].values
+                    # if eligible for imputation
+                    if enough_reads(window,w,complete=False):
+                        window=pd.DataFrame(data=impute(window,w))
+                        ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                        methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+                meth = methtemp.copy()
             # compute coverage and output summary
             for i in range(0,w,1):
                 window = meth.iloc[:,range(i,i+w)].values
@@ -1150,16 +1142,17 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             methbin = aggreR # backup
             meth = methbin.copy()
             meth = meth.drop('Qname',axis=1)
-            methtemp = meth.copy()
-            # impute once if valid
-            for i in range(0,meth.shape[1]-w+1,1):
-                window = meth.iloc[:,range(i,i+w)].values
-                # if eligible for imputation
-                if enough_reads(window,w,complete=False):
-                    window=pd.DataFrame(data=impute(window,w))
-                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
-                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
-            meth = methtemp.copy()
+            if imp:
+                methtemp = meth.copy()
+                # impute once if valid
+                for i in range(0,meth.shape[1]-w+1,1):
+                    window = meth.iloc[:,range(i,i+w)].values
+                    # if eligible for imputation
+                    if enough_reads(window,w,complete=False):
+                        window=pd.DataFrame(data=impute(window,w))
+                        ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                        methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+                meth = methtemp.copy()
             # compute coverage and output summary
             for i in range(0,w,1):
                 window = meth.iloc[:,range(i,i+w)].values
@@ -1191,16 +1184,17 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
             meth = methbin.copy()
             meth = meth.drop('Qname',axis=1)
-            methtemp = meth.copy()
-            # impute once if valid
-            for i in range(0,meth.shape[1]-w+1,1):
-                window = meth.iloc[:,range(i,i+w)].values
-                # if eligible for imputation
-                if enough_reads(window,w,complete=False):
-                    window=pd.DataFrame(data=impute(window,w))
-                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
-                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
-            meth = methtemp.copy()        
+            if imp:
+                methtemp = meth.copy()
+                # impute once if valid
+                for i in range(0,meth.shape[1]-w+1,1):
+                    window = meth.iloc[:,range(i,i+w)].values
+                    # if eligible for imputation
+                    if enough_reads(window,w,complete=False):
+                        window=pd.DataFrame(data=impute(window,w))
+                        ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                        methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+                meth = methtemp.copy()        
             # compute coverage and output summary
             for i in range(w-1,2*w-1,1):
                 window = meth.iloc[:,range(i,i+w)].values
@@ -1239,16 +1233,17 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2):
             #meth = methbin.iloc[:,methbin.columns!='Qname'] # pd to np
             meth = methbin.copy()
             meth = meth.drop('Qname',axis=1)
-            methtemp = meth.copy()
-            # impute once if valid
-            for i in range(0,meth.shape[1]-w+1,1):
-                window = meth.iloc[:,range(i,i+w)].values
-                # if eligible for imputation
-                if enough_reads(window,w,complete=False):
-                    window=pd.DataFrame(data=impute(window,w))
-                    ind=np.where(window.notnull().sum(axis=1)==w)[0]
-                    methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
-            meth = methtemp.copy()        
+            if imp:
+                methtemp = meth.copy()
+                # impute once if valid
+                for i in range(0,meth.shape[1]-w+1,1):
+                    window = meth.iloc[:,range(i,i+w)].values
+                    # if eligible for imputation
+                    if enough_reads(window,w,complete=False):
+                        window=pd.DataFrame(data=impute(window,w))
+                        ind=np.where(window.notnull().sum(axis=1)==w)[0]
+                        methtemp.loc[methtemp.iloc[ind,:].index,meth.iloc[:,range(i,i+w)].columns]=window.loc[ind,:].values
+                meth = methtemp.copy()        
             # compute coverage and output summary
             for i in range(w-1,2*w-1,1):
                 window = meth.iloc[:,range(i,i+w)].values
@@ -1335,6 +1330,8 @@ parser.add_argument("--CHG", default=False, action='store_true', help='Include g
 parser.add_argument("--CHH", default=False, action='store_true', help='Include genomic context CHH')
 parser.add_argument("--opt", default=False, action='store_true', help='Outputs compositions of methylation patterns')
 parser.add_argument('--mlv', default=False, action='store_true', help='Outputs methylation levels')
+parser.add_argument('--imp', default=False, action='store_true', help='Whether to implement BSImp (impute if valid)')
+
 
 
 args = parser.parse_args()
@@ -1386,7 +1383,7 @@ if __name__ == "__main__":
     #start=t.time()
     if args.CG:
         con='CG'
-        CG=Parallel(n_jobs=args.cores)(delayed(CGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
+        CG=Parallel(n_jobs=args.cores)(delayed(CGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv,imp=args.imp) for bamfile in spbam_list)
         
         logm("Merging MeH within samples for CG.")
         # merge MeH within sample
@@ -1429,11 +1426,9 @@ if __name__ == "__main__":
                         Toappend = pd.read_csv(toapp_dir)
                         Tomod = Tomod.append(Toappend)
                         Tomod.to_csv(res_dir,index = False, header = True)
-                        #os.remove(toapp_dir)
                     else:
                         Toappend = pd.read_csv(toapp_dir)
                         Toappend.to_csv(res_dir,index = False,header=True)
-                        #os.remove(toapp_dir)
 
         #os.chdir('../')
         #os.chdir(outputFolder)
@@ -1451,8 +1446,6 @@ if __name__ == "__main__":
                     Toappend = pd.read_csv(toapp_dir)
                     Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
                     Count = Toappend.groupby(['chrom','bin','strand']).size().reset_index(name='counts')
-                    #Count=Count.drop_duplicates()
-                    #print(Count)
                     Toappend=Toappend.merge(Count, on=['chrom','bin','strand'])
                     conditions = [
                         (Toappend['counts'] > 4),
@@ -1464,7 +1457,6 @@ if __name__ == "__main__":
                     # create a new column and use np.select to assign values to it using our lists as arguments
                     Toappend['ML'] = np.select(conditions, values)
                     Toappend=Toappend.drop(columns=['counts','pos'])
-                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
                     Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
                     Tomod = Tomod.append(Toappend)
                     Tomod.to_csv(res_dir,index = False,header=True)
@@ -1485,10 +1477,10 @@ if __name__ == "__main__":
                     # create a new column and use np.select to assign values to it using our lists as arguments
                     Toappend['ML'] = np.select(conditions, values)
                     Toappend=Toappend.drop(columns=['counts','pos'])
-                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
+                    
                     Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
                     Toappend.to_csv(res_dir,index = False,header=True)
-                    #os.remove(toapp_dir)
+                    
         logm("Merging ML between samples for CG.")
         # merge ML between samples
         if args.mlv:
@@ -1519,7 +1511,7 @@ if __name__ == "__main__":
             if os.path.exists(res_dir):
                 Result = pd.read_csv(res_dir)
                 Tomerge = pd.read_csv(tomerge_dir)
-                #Tomerge = Tomerge.drop(columns=['dis','ML','depth'])
+                
                 Tomerge.dropna(axis = 0, thresh=4, inplace = True)
                 Tomerge = Tomerge.rename(columns={'MeH': sample})
                 Result = Result.merge(Tomerge, on=['chrom','bin','strand'])
@@ -1529,7 +1521,7 @@ if __name__ == "__main__":
             else:
                 Result = pd.read_csv(tomerge_dir)
                 Result.head()
-                #Result = Result.drop(columns=['dis','ML','depth'])
+                
                 Result.dropna(axis = 0, thresh=4, inplace = True)
                 Result = Result.rename(columns={'MeH': sample})
                 Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
@@ -1542,12 +1534,11 @@ if __name__ == "__main__":
         for i in CG:
             toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_coverage':i[2],'context':i[3]},index=[0])
             topp=topp.append(toout)
-        #topp.groupby(['context','sample']).agg({'coverage': 'sum', 'context_coverage': 'sum'})
-        #print(topp)
+        
           
     if args.CHG:
         con='CHG'
-        CG=Parallel(n_jobs=args.cores)(delayed(CHGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
+        CG=Parallel(n_jobs=args.cores)(delayed(CHGgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv,imp=args.imp) for bamfile in spbam_list)
         
         logm("Merging MeH within samples for CHG.")  
         for file in spbam_list:
@@ -1562,16 +1553,13 @@ if __name__ == "__main__":
                     Toappend = pd.read_csv(toapp_dir)
                     Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
                     Toappend=Toappend.drop(columns=['pos'])
-                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
                     Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'MeH': 'mean'}).reset_index()
                     Tomod = Tomod.append(Toappend)
                     Tomod.to_csv(res_dir,index = False,header=True)
-                    #os.remove(toapp_dir)
                 else:
                     Toappend = pd.read_csv(toapp_dir)
                     Toappend['bin'] = [((x-1)//400)*400+200  for x in Toappend['pos']]
                     Toappend=Toappend.drop(columns=['pos'])
-                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
                     Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'MeH': 'mean'}).reset_index()
                     Toappend.to_csv(res_dir,index = False,header=True)
                     
@@ -1595,8 +1583,6 @@ if __name__ == "__main__":
                         Toappend.to_csv(res_dir,index = False,header=True)
                         os.remove(toapp_dir)
 
-        #os.chdir('../')
-        #os.chdir(outputFolder)
         logm("Merging ML within samples for CHG.")    
         # append ML within samples
         if args.mlv:
@@ -1623,7 +1609,6 @@ if __name__ == "__main__":
                     # create a new column and use np.select to assign values to it using our lists as arguments
                     Toappend['ML'] = np.select(conditions, values)
                     Toappend=Toappend.drop(columns=['counts','pos'])
-                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
                     Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
                     Tomod = Tomod.append(Toappend)
                     Tomod.to_csv(res_dir,index = False,header=True)
@@ -1644,7 +1629,6 @@ if __name__ == "__main__":
                     # create a new column and use np.select to assign values to it using our lists as arguments
                     Toappend['ML'] = np.select(conditions, values)
                     Toappend=Toappend.drop(columns=['counts','pos'])
-                    #Toappend=Toappend.dropna(axis = 0, thresh=4, inplace = True)
                     Toappend=Toappend.groupby(['chrom','bin','strand']).agg({'ML': 'mean'}).reset_index()
                     Toappend.to_csv(res_dir,index = False,header=True)
                     os.remove(toapp_dir)
@@ -1667,8 +1651,6 @@ if __name__ == "__main__":
             else:
                 Result = pd.read_csv(tomerge_dir)
                 Result.head()
-                #Result = Result.drop(columns=['dis','ML','depth'])
-                #Result.dropna(axis = 0, thresh=4, inplace = True)
                 Result = Result.rename(columns={'MeH': sample})
                 Result.to_csv(Folder + con + '_' +'Results.csv',index = False,header=True)
                 os.remove(tomerge_dir)
@@ -1696,18 +1678,15 @@ if __name__ == "__main__":
                     Result.to_csv(res_dir,index = False,header=True)
                     os.remove(tomerge_dir)
                     
-        #Result.to_csv(Folder + con + '_' +'Results.csv' ,index = False,header=True)
-        #print("All done.",len(bam_list),"bam files processed and merged for CHG.")
         logm("All done. "+str(len(bam_list))+" bam files processed and merged for CHG.")
         
         for i in CG:
             toout=pd.DataFrame({'sample':i[0],'coverage':i[1],'context_coverage':i[2],'context':i[3]},index=[0])
             topp=topp.append(toout)
-        #topp.groupby(['context','sample']).agg({'coverage': 'sum', 'context_coverage': 'sum'})
         
     if args.CHH:
         con='CHH'
-        CG=Parallel(n_jobs=args.cores)(delayed(CHHgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv) for bamfile in spbam_list)
+        CG=Parallel(n_jobs=args.cores)(delayed(CHHgenome_scr)(bamfile,w=args.windowsize,fa=fa,MeH=args.MeH,dist=args.dist,optional=args.opt,melv=args.mlv,imp=args.imp) for bamfile in spbam_list)
     
         logm("Merging MeH within samples for CHH.")
         # merge MeH within sample
@@ -1885,5 +1864,10 @@ if __name__ == "__main__":
 # python3 finalfinal.py -w 4 -c 80 --CG --opt --mlv
 # MH/testsp/hg19
 # python testfull.py -w 4 -c 8 --CG
+
+
+
+
+
 
 
