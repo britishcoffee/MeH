@@ -98,7 +98,8 @@ $ python MeHscr.py -h
     --CHH                 Include genomic context CHH
     --opt                 Outputs compositions of methylation patterns
     --mlv                 Outputs methylation levels
-
+    --imp		  Whether to implement BSImp (impute if valid)
+	
 ```
 
 ##### Example
@@ -108,6 +109,8 @@ $ python MeHscr.py -h
 python MeHscr.py -w 4 -c 4 --CG
 # 'CG', 'CHG' and 'CHH' with window size of 4 cytosines, weighted degree kernel for pairwise distances between methylation patterns and 8 cores parallel processing
 python MeHscr.py -w 4 -c 8 --CG --CHG --CHH -d 2
+# 'CG', 'CHG' and 'CHH' with window size of 4 cytosines, impute if valid and output methylation pattern compositions within each window, all using 8 cores parallel processing
+python MeHscr.py -w 4 -c 8 --CG --CHG --CHH --opt --imp
 ```
 
 > The programme is running at folder "/MeHdata"
