@@ -92,7 +92,7 @@ $ python MeHscr.py -h
     --CHH                 Include genomic context CHH
     --opt                 Outputs compositions of methylation patterns
     --mlv                 Outputs methylation levels
-    --imp		  Whether to implement BSImp (impute if valid)
+    --imp		  Implement BSImp (impute if valid)
 	
 ```
 
