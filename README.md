@@ -64,12 +64,6 @@ Use the scrpit **MeHscr.py** to calculated the methylation heterogeneity.
 
 > :grey_exclamation:used as command-line in your terminal.
 
-
-
-:exclamation: If there is too many missing data. [BSImp](./https://github.com/britishcoffee/BSImp) is a tool for imputation recovers partially observed methylation patterns for the analysis of methylation heterogeneity at a large proportion of regions genomewide and also estimates methylation levels accurately. 
-
-
-
 ##### Input
 
 * Run all the files under folder "**MeHdata**", including:
