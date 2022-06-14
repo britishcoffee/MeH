@@ -1330,7 +1330,7 @@ parser.add_argument("--CHG", default=False, action='store_true', help='Include g
 parser.add_argument("--CHH", default=False, action='store_true', help='Include genomic context CHH')
 parser.add_argument("--opt", default=False, action='store_true', help='Outputs compositions of methylation patterns')
 parser.add_argument('--mlv', default=False, action='store_true', help='Outputs methylation levels')
-parser.add_argument('--imp', default=False, action='store_true', help='Whether to implement BSImp (impute if valid)')
+parser.add_argument('--imp', default=True, action='store_false', help='Implement BSImp (impute if valid)')
 
 
 
