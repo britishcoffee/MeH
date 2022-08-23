@@ -297,6 +297,7 @@ def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'):
     elif MeH==5: #Epipoly
         score=1-((count/m)**2).sum(axis=0)
     
+    out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':round(score,5),'dis':dis,'strand':strand}, index=[0])
     if optional:
         if MeH!=3:
             count=count.reshape(2**w)
@@ -333,7 +334,6 @@ def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'):
                         'p61':count[61],'p62':count[62],'p63':count[63],'p64':count[64],'MeH':round(score,5),'dis':dis,'strand':strand}, index=[0])    
         return out, opt
     else:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':round(score,5),'dis':dis,'strand':strand}, index=[0])    
         return out
 
 
