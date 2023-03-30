@@ -33,13 +33,31 @@ Please follow the [tutorial](./Tutorial.md) of example use case.
 
 ##  Table of Contents
 
-* [System requirements](#system-requirements) 
-* [Installation](#Installation)
-* [Methylation heterogeneity profiling](#methylation-heterogeneity-profiling)
-* [Visualization of MeH](#Visualization-of-MeH)
-
-* [Subsequent analysis](#subsequent-analysis)
-* [Visualization of DHR](#Visualization-of-DHR)
+- [MeH :sheep:](#meh-sheep)
+    - [Publication](#publication)
+  - [Pipeline](#pipeline)
+    - [Documentation](#documentation)
+    - [Tutorial](#tutorial)
+  - [Table of Contents](#table-of-contents)
+  - [System requirements](#system-requirements)
+  - [Installation](#installation)
+  - [Methylation heterogeneity profiling](#methylation-heterogeneity-profiling)
+        - [Input](#input)
+        - [Usage](#usage)
+        - [Example](#example)
+        - [Output](#output)
+  - [Visualization of MeH](#visualization-of-meh)
+        - [Input](#input-1)
+        - [Usage](#usage-1)
+        - [Example](#example-1)
+        - [Output](#output-1)
+  - [Subsequent analysis](#subsequent-analysis)
+        - [Input](#input-2)
+        - [Example](#example-2)
+        - [Output](#output-2)
+  - [Visualization of DHR](#visualization-of-dhr)
+        - [Input](#input-3)
+  - [Contact](#contact)
 
 ## System requirements
 * python 2.7 + 
@@ -69,6 +87,9 @@ Use the scrpit **MeHscr.py** to calculated the methylation heterogeneity.
 * Run all the files under folder "**MeHdata**", including:
   * .bam and .bam.bai files
   * .fa and .fa.fai of the reference genome 
+
+> it is recommend removing potential PCR duplicates for the .bam file by [Samtools](https://github.com/samtools/samtools) before input to MeH.
+> `samtools rmdup <input.bam> <output.bam>`
 
 ##### Usage
 
