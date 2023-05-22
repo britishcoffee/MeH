@@ -59,7 +59,7 @@ def enough_reads(window,w,complete):
         tempw1=np.isnan(window).sum(axis=1)==1
         return temp.sum()>=2**(w-2) and tempw1.sum()>0
     
-
+# imputation function
 def impute(window, w):
     full_ind = np.where(np.isnan(window).sum(axis=1) == 0)[0]
     part_ind = np.where(np.isnan(window).sum(axis=1) == 1)[0]
@@ -80,16 +80,13 @@ def impute(window, w):
     
     return window
    
-
+# get the complete window from the selected numnber of C
 def getcomplete(window,w):
     temp=np.isnan(window).sum(axis=1)==0
     mat=window[np.where(temp)[0],:]
-    #temp=window.notnull().sum(axis=1)>=w
-    #mat=window.iloc[np.where(temp)[0],:]
-    #else:
-    #    temp=mat.notnull().sum(axis=1)>=w-1
     return mat
 
+# calculate the distance of patterns
 def PattoDis(mat,dist=1):
     s=mat.shape[0]
     dis=np.zeros((s,s))
@@ -102,10 +99,12 @@ def PattoDis(mat,dist=1):
                     d=WDK_d(mat.iloc[i,],mat.iloc[j,]) 
                 dis[i,j]=dis[j,i]=d
     return dis
-        
+
+# hamming distacne        
 def Ham_d(pat1,pat2): 
     return (pat1!=pat2).sum()
 
+# WDK distance
 def WDK_d(pat1,pat2): 
     d=0
     w=pat1.shape[0]
