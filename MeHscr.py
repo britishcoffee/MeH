@@ -40,25 +40,15 @@ def close_log():
     
     
 # Count # of windows with enough reads for complete/impute
-def coverage(methbin,complete,w):
-    count=0
-    tot = 0
-    meth=methbin.iloc[:,methbin.columns!='Qname']
-    if len(meth.columns)>=w:
-        for i in range(len(meth.columns)-w+1):
-            # extract a window
-            temp = meth.iloc[:,i:i+w].copy()
-            #print(temp)
-            tot = tot+1
-            if (enough_reads(window=temp,complete=complete,w=w)):
-                count=count+1
-                #toprint=temp.notnull().sum(axis=1)>=w
-                #print(toprint.sum())
-        #print(count)
-        #print(tot)
-        return count/tot*100
-    else: 
+def coverage(methbin, complete, w):
+    meth = methbin.iloc[:, methbin.columns != 'Qname']
+    if len(meth.columns) >= w:
+        tot = len(meth.columns) - w + 1
+        count = sum(enough_reads(window=meth.iloc[:, i:i+w].copy(), complete=complete, w=w) for i in range(tot))
+        return count / tot * 100
+    else:
         return 0
+    
 
 # Check whether a window has enough reads for complete/impute
 def enough_reads(window,w,complete):
@@ -70,29 +60,25 @@ def enough_reads(window,w,complete):
         return temp.sum()>=2**(w-2) and tempw1.sum()>0
     
 
-def impute(window,w):
-    full_ind=np.where(np.isnan(window).sum(axis=1)==0)[0]
-    part_ind=np.where(np.isnan(window).sum(axis=1)==1)[0]
+def impute(window, w):
+    full_ind = np.where(np.isnan(window).sum(axis=1) == 0)[0]
+    part_ind = np.where(np.isnan(window).sum(axis=1) == 1)[0]
+
     for i in range(len(part_ind)):
-        sam = []
-        # which column is nan
-        pos=np.where(np.isnan(window[part_ind[i],:]))[0]
-        if np.unique(window[np.where(np.invert(np.isnan(window[:,pos])))[0],pos]).shape[0]==1:
-            window[part_ind[i],pos]=window[np.where(np.invert(np.isnan(window[:,pos])))[0],pos][0]
+        pos = np.where(np.isnan(window[part_ind[i], :]))[0]
+        if np.unique(window[np.where(~np.isnan(window[:, pos]))[0], pos]).shape[0] == 1:
+            window[part_ind[i], pos] = window[np.where(~np.isnan(window[:, pos]))[0], pos][0]
         else:
-            #print("win_part i pos =",window[part_ind[i],pos])
-            for j in range(len(full_ind)):
-                if (window[part_ind[i],:]==window[full_ind[j],:]).sum()==w-1:
-                    sam.append(j)
-            if len(sam)>0:
-                s1=random.sample(sam, 1)
-                s=window[full_ind[s1],pos]
+            sam = np.where(np.sum(window[part_ind[i], :] == window[full_ind, :], axis=1) == w - 1)[0]
+            if len(sam) > 0:
+                s1 = random.choice(sam)
+                s = window[full_ind[s1], pos]
             else:
-                s=random.sample(window[np.where(np.invert(np.isnan(window[:,pos])))[0],pos].tolist(), k=1)[0]
-            window[part_ind[i],pos]=np.float64(s)
-            #print("win_part i =",window[part_ind[i],pos])
-            #print("s = ",np.float64(s))
-    return window 
+                valid_values = window[np.where(~np.isnan(window[:, pos]))[0], pos]
+                s = random.choice(valid_values.tolist())
+            window[part_ind[i], pos] = np.float64(s)
+    
+    return window
    
 
 def getcomplete(window,w):
@@ -130,55 +116,17 @@ def WDK_d(pat1,pat2):
     return d
 
 # input a window of w CGs and output a list of proportions with starting genomic location and genomic distance across
-def window_summ(pat,start,dis,chrom): 
-    m=np.shape(pat)[0]
-    d=np.shape(pat)[1]
-    all_pos=np.zeros((2**d,d))
-    for i in range(d): 
-        all_pos[:,i]=np.linspace(0,2**d-1,2**d)%(2**(i+1))//(2**i)
-    #print(all_pos)
+def window_summ(pat, start, dis, chrom):
+    m, d = pat.shape
+    all_pos = np.unpackbits(np.arange(2**d, dtype=np.uint8)[:, np.newaxis], axis=1)[:, -d:]
     
-    prob=np.zeros((2**d,1))
-    #print(prob)
-    for i in range(2**d): 
-        count = 0
-        for j in range(m):
-            if (all_pos[i,:]==pat.iloc[j,:]).sum()==d:
-                count += 1
-                #print(count)
-        prob[i]=count
-
-
-    if d==3:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
-                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'dis':dis})    
-    if d==4:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
-                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
-                    'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
-                    'p16':prob[15],'dis':dis})   
-    if d==5:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
-                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
-                    'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
-                    'p16':prob[15],'p17':prob[16],'p18':prob[17],'p19':prob[18],'p20':prob[19],\
-                    'p21':prob[20],'p22':prob[21],'p23':prob[22],'p24':prob[23],'p25':prob[24],\
-                    'p26':prob[25],'p27':prob[26],'p28':prob[27],'p29':prob[28],'p30':prob[29],\
-                    'p31':prob[30],'p32':prob[31],'dis':dis})
-    if d==6:
-        out=pd.DataFrame({'chrom':chrom,'pos':start,'p01':prob[0],'p02':prob[1],'p03':prob[2],'p04':prob[3],\
-                    'p05':prob[4],'p06':prob[5],'p07':prob[6],'p08':prob[7],'p09':prob[8],'p10':prob[9],\
-                    'p11':prob[10],'p12':prob[11],'p13':prob[12],'p14':prob[13],'p15':prob[14],\
-                    'p16':prob[15],'p17':prob[16],'p18':prob[17],'p19':prob[18],'p20':prob[19],\
-                    'p21':prob[20],'p22':prob[21],'p23':prob[22],'p24':prob[23],'p25':prob[24],\
-                    'p26':prob[25],'p27':prob[26],'p28':prob[27],'p29':prob[28],'p30':prob[29],\
-                    'p31':prob[30],'p32':prob[31],'p33':prob[32],'p34':prob[33],'p35':prob[34],\
-                    'p36':prob[35],'p37':prob[36],'p38':prob[37],'p39':prob[38],'p40':prob[39],\
-                    'p41':prob[40],'p42':prob[41],'p43':prob[42],'p44':prob[43],'p45':prob[44],\
-                    'p46':prob[45],'p47':prob[46],'p48':prob[47],'p49':prob[48],'p50':prob[49],\
-                    'p51':prob[50],'p52':prob[51],'p53':prob[52],'p54':prob[53],'p55':prob[54],\
-                    'p56':prob[55],'p57':prob[56],'p58':prob[57],'p59':prob[58],'p60':prob[59],\
-                    'p61':prob[60],'p62':prob[61],'p63':prob[62],'p64':prob[63],'dis':dis})
+    counts = (np.logical_and(np.all(all_pos[:, np.newaxis, :] == pat.values, axis=2), np.sum(~pat.isnull().values, axis=1) == d)).sum(axis=1)
+    
+    column_names = ['chrom', 'pos'] + ['p{:02d}'.format(i + 1) for i in range(2 ** d)] + ['dis']
+    out_dict = {'chrom': chrom, 'pos': start, 'dis': dis}
+    out_dict.update(zip(column_names[2:-1], counts))
+    
+    out = pd.DataFrame(out_dict)
     return out
 
 
@@ -297,7 +245,6 @@ def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'):
     elif MeH==5: #Epipoly
         score=1-((count/m)**2).sum(axis=0)
     
-    out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':round(score,5),'dis':dis,'strand':strand}, index=[0])
     if optional:
         if MeH!=3:
             count=count.reshape(2**w)
@@ -334,30 +281,8 @@ def MeHperwindow(pat,start,dis,chrom,D,w,optional,MeH=2,dist=1,strand='f'):
                         'p61':count[61],'p62':count[62],'p63':count[63],'p64':count[64],'MeH':round(score,5),'dis':dis,'strand':strand}, index=[0])    
         return out, opt
     else:
+        out=pd.DataFrame({'chrom':chrom,'pos':start,'MeH':round(score,5),'dis':dis,'strand':strand}, index=[0])    
         return out
-
-
-def impute(window,w):
-    full_ind=np.where(np.isnan(window).sum(axis=1)==0)[0]
-    part_ind=np.where(np.isnan(window).sum(axis=1)==1)[0]
-    for i in range(len(part_ind)):
-        sam = []
-        # which column is nan
-        pos=np.where(np.isnan(window[part_ind[i],:]))[0]
-        if np.unique(window[np.where(np.invert(np.isnan(window[:,pos])))[0],pos]).shape[0]==1:
-            window[part_ind[i],pos]=window[np.where(np.invert(np.isnan(window[:,pos])))[0],pos][0]
-        else:
-            #print("win_part i pos =",window[part_ind[i],pos])
-            for j in range(len(full_ind)):
-                if (window[part_ind[i],:]==window[full_ind[j],:]).sum()==w-1:
-                    sam.append(j)
-            if len(sam)>0:
-                s1=random.sample(sam, 1)
-                s=window[full_ind[s1],pos]
-            else:
-                s=random.sample(window[np.where(np.invert(np.isnan(window[:,pos])))[0],pos].tolist(), k=1)[0]
-            window[part_ind[i],pos]=np.float64(s)
-    return window 
 
 
 def CGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2,imp=True):
@@ -709,7 +634,7 @@ def CHHgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2,imp=True
                         ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11','p12','p13','p14','p15','p16'\
                         ,'p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28',\
                         'p29','p30','p31','p32','MeH','dis','strand'])
-        if w==6:
+        if w==5:
             Resultopt = pd.DataFrame(columns=\
                         ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11','p12','p13','p14','p15','p16'\
                         ,'p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28',\
@@ -1010,7 +935,7 @@ def CHGgenome_scr(bamfile,w,fa,optional,melv,silence=False,dist=1,MeH=2,imp=True
                         ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11','p12','p13','p14','p15','p16'\
                         ,'p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28',\
                         'p29','p30','p31','p32','MeH','dis','strand'])
-        if w==6:
+        if w==5:
             Resultopt = pd.DataFrame(columns=\
                         ['chrom','pos','p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11','p12','p13','p14','p15','p16'\
                         ,'p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28',\
@@ -1330,7 +1255,7 @@ parser.add_argument("--CHG", default=False, action='store_true', help='Include g
 parser.add_argument("--CHH", default=False, action='store_true', help='Include genomic context CHH')
 parser.add_argument("--opt", default=False, action='store_true', help='Outputs compositions of methylation patterns')
 parser.add_argument('--mlv', default=False, action='store_true', help='Outputs methylation levels')
-parser.add_argument('--imp', default=True, action='store_false', help='Implement BSImp (impute if valid)')
+parser.add_argument('--imp', default=False, action='store_true', help='Whether to implement BSImp (impute if valid)')
 
 
 
