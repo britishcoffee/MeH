@@ -60,11 +60,12 @@ Please follow the [tutorial](./Tutorial.md) of example use case.
   - [Contact](#contact)
 
 ## System requirements
-* python 2.7 + 
-* pandas package 0.24 +
-* pysam package 0.16.0.1 +
-* joblib package
-* R 3.4 +
+* Python 3.8+
+* pandas 1.5+
+* NumPy 1.20+
+* pysam 0.16+
+* joblib 1.0+
+* R 3.4+ (only for the downstream R scripts)
 
 ## Installation
 
@@ -127,6 +128,17 @@ python MeHscr.py -w 4 -c 8 --CG --CHG --CHH -d 2
 # 'CG', 'CHG' and 'CHH' with window size of 4 cytosines, output methylation pattern compositions within each window, all using 8 cores parallel processing and no imputation
 python MeHscr.py -w 4 -c 8 --CG --CHG --CHH --opt --imp
 ```
+
+Version 2 also accepts input and output paths, so it no longer has to be run
+from the repository root:
+
+```bash
+python MeHscr.py --CG --data-dir /path/to/bam-and-reference \
+  --output-dir /path/to/results
+```
+
+Use `--reference /path/to/genome.fa` if the data directory contains more than
+one FASTA file. Input BAM/BAI files are never split, modified, or deleted.
 
 > The programme is running at folder "/MeHdata"
 
@@ -321,4 +333,3 @@ Use the scrpit **[IGV](./https://software.broadinstitute.org/software/igv/downlo
 [<img src="https://avatars.githubusercontent.com/u/30218118?v=4" width="100">](ytchang.sabrina@gmail.com) 
 
 **Sabrina**- [:email: ytchang.sabrina@gmail.com](ytchang.sabrina@gmail.com) 
-

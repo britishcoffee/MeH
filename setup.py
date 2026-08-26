@@ -1,33 +1,35 @@
-from setuptools import setup, find_packages
+from pathlib import Path
 
-VERSION = '0.0.8' 
-DESCRIPTION = 'A bioinformatic tool for profiling methylation heterogeneity genomewide'
-LONG_DESCRIPTION = ''
+from setuptools import setup
 
 
-# Setting up
+ROOT = Path(__file__).parent
+
 setup(
-        name="MeHscr", 
-        version=VERSION,
-        author="Ya-Ting Sabrina Chang",
-        author_email="<ytchang.sabrina@gmail.com>",
-        url="https://github.com/britishcoffee/Methylationhet",
-	license='MIT',
-        packages=['MeHscr'],
-        description=DESCRIPTION,
-	scripts=['bin/genome_scr'],
-        long_description=LONG_DESCRIPTION,
-        install_requires=['pysam==0.16.0.1','numpy==1.16.6','pandas==0.24.2','joblib'], # add any additional packages that 
-        # needs to be installed along with your package. Eg: 'caer'
-        
-        keywords=['python', 'first package'],
-        classifiers= [
-            "Intended Audience :: Science/Research",
-            "Programming Language :: Python :: 2",
-            "Programming Language :: Python :: 3",
-	    "License :: OSI Approved :: MIT License",
-            "Operating System :: MacOS :: MacOS X",
-            "Operating System :: POSIX :: Linux",
-	
-        ]
+    name="MeHscr",
+    version="2.0.0",
+    description="Profile methylation heterogeneity from bisulfite-sequencing data",
+    long_description=(ROOT / "README.md").read_text(encoding="utf-8"),
+    long_description_content_type="text/markdown",
+    author="Ya-Ting Sabrina Chang",
+    author_email="ytchang.sabrina@gmail.com",
+    url="https://github.com/britishcoffee/MeH",
+    license="MIT",
+    py_modules=["MeHscr"],
+    python_requires=">=3.8",
+    install_requires=[
+        "joblib>=1.0",
+        "numpy>=1.20",
+        "pandas>=1.5",
+        "pysam>=0.16",
+    ],
+    entry_points={"console_scripts": ["mehscr=MeHscr:main"]},
+    classifiers=[
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: MacOS :: MacOS X",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python :: 3",
+        "Topic :: Scientific/Engineering :: Bio-Informatics",
+    ],
 )
