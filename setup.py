@@ -7,7 +7,7 @@ ROOT = Path(__file__).parent
 
 setup(
     name="MeHscr",
-    version="2.0.0",
+    version="2.1.0",
     description="Profile methylation heterogeneity from bisulfite-sequencing data",
     long_description=(ROOT / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",

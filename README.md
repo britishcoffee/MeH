@@ -139,6 +139,9 @@ python MeHscr.py --CG --data-dir /path/to/bam-and-reference \
 
 Use `--reference /path/to/genome.fa` if the data directory contains more than
 one FASTA file. Input BAM/BAI files are never split, modified, or deleted.
+Each parallel BAM/context job reports its genome position and completion
+percentage. Use `--progress-every 1` for more frequent updates or `--quiet` to
+suppress them.
 
 > The programme is running at folder "/MeHdata"
 

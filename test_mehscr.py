@@ -68,3 +68,11 @@ def test_read_thresholds():
     complete = meh._all_patterns(3)
     assert meh.enough_reads(complete, 3, complete=True)
     assert not meh.enough_reads(complete[:7], 3, complete=True)
+
+
+def test_progress_message():
+    message = meh._progress_message("CG", "sample1", 25, "Chr1", 1234, 56)
+    assert "[#####---------------]" in message
+    assert "25%" in message
+    assert "Chr1:1,234" in message
+    assert "windows=56" in message

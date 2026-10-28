@@ -19,7 +19,7 @@ import pandas as pd
 import pysam
 from joblib import Parallel, delayed
 
-VERSION = "2.0.0"
+VERSION = "2.1.0"
 CONTEXTS = ("CG", "CHG", "CHH")
 RESULT_COLUMNS = ["chrom", "pos", "MeH", "dis", "strand"]
 ML_COLUMNS = ["chrom", "pos", "ML", "strand", "depth"]
@@ -278,9 +278,19 @@ def _write_csv(frame, path):
     os.replace(str(temporary), str(path))
 
 
+def _progress_message(context, sample, percent, chrom, position, result_count):
+    """Build one atomic progress line that remains readable across workers."""
+    width = 20
+    filled = min(width, max(0, percent * width // 100))
+    bar = "#" * filled + "-" * (width - filled)
+    location = "{}:{:,}".format(chrom, position) if chrom else "waiting"
+    return "[MeH] {:<3} {} [{}] {:3d}%  {:<22} windows={:,}".format(
+        context, sample, bar, percent, location, result_count)
+
+
 def scan_bam(bam_path, fasta_path, output_dir, context, width=4, optional=False,
              methylation_level=False, distance_type=1, score_type=2,
-             do_impute=False, quiet=False, seed=0):
+             do_impute=False, quiet=False, seed=0, progress_every=5):
     """Scan one BAM and write per-window results."""
     bam_path, fasta_path, output_dir = map(Path, (bam_path, fasta_path, output_dir))
     sample = bam_path.stem
@@ -290,19 +300,35 @@ def scan_bam(bam_path, fasta_path, output_dir, context, width=4, optional=False,
     rng = random.Random("{}:{}:{}".format(seed, sample, context))
     pileup_coverage = context_coverage = 0
     current_chrom = None
+    current_position = 0
 
     with pysam.AlignmentFile(str(bam_path), "rb") as alignment, \
             pysam.FastaFile(str(fasta_path)) as fasta:
+        offsets = {}
+        offset = 0
+        for reference, reference_length in zip(alignment.references, alignment.lengths):
+            offsets[reference] = offset
+            offset += reference_length
+        genome_length = max(offset, 1)
+        last_reported = 0
+        if not quiet:
+            print(_progress_message(context, sample, 0, None, 0, 0), flush=True)
+
         for column in alignment.pileup(stepper="all", min_base_quality=0):
             pileup_coverage += 1
             chrom = column.reference_name
+            current_position = column.pos + 1
             if chrom != current_chrom:
                 buffers["f"].clear()
                 buffers["r"].clear()
                 current_chrom = chrom
-            if not quiet and column.pos % 2_000_000 == 1:
-                LOGGER.info("%s sample=%s chrom=%s pos=%s results=%s", context,
-                            sample, chrom, column.pos + 1, len(results))
+            percent = min(99, int(
+                (offsets.get(chrom, 0) + column.pos + 1) * 100 / genome_length
+            ))
+            if not quiet and percent >= last_reported + progress_every:
+                print(_progress_message(context, sample, percent, chrom,
+                                        column.pos + 1, len(results)), flush=True)
+                last_reported = percent
             for strand, reverse in (("f", False), ("r", True)):
                 if not _context_matches(fasta, chrom, column.pos, context, strand):
                     continue
@@ -330,6 +356,10 @@ def scan_bam(bam_path, fasta_path, output_dir, context, width=4, optional=False,
                 else:
                     result = evaluated
                 results.append(result.iloc[0].to_dict())
+
+    if not quiet:
+        print(_progress_message(context, sample, 100, current_chrom, current_position,
+                                len(results)), flush=True)
 
     _write_csv(pd.DataFrame(results, columns=RESULT_COLUMNS),
                output_dir / "{}_{}_0.csv".format(context, sample))
@@ -419,6 +449,8 @@ def build_parser():
     parser.add_argument("--reference", type=Path,
                         help="reference FASTA when data-dir has multiple FASTA files")
     parser.add_argument("--seed", type=int, default=0, help="imputation random seed")
+    parser.add_argument("--progress-every", type=int, default=5, metavar="PERCENT",
+                        help="print one progress line per percentage interval")
     parser.add_argument("--quiet", action="store_true", help="suppress progress messages")
     parser.add_argument("--version", action="version", version="%(prog)s " + VERSION)
     return parser
@@ -430,6 +462,8 @@ def _validate_inputs(parser, args):
         parser.error("select at least one context: --CG, --CHG, or --CHH")
     if args.cores < 1:
         parser.error("--cores must be at least 1")
+    if not 1 <= args.progress_every <= 100:
+        parser.error("--progress-every must be between 1 and 100")
     if args.meh == 3 and args.windowsize not in (3, 4):
         parser.error("phylogeny score (-m 3) supports window sizes 3 and 4 only")
     data_dir = args.data_dir.resolve()
@@ -453,14 +487,16 @@ def main(argv=None):
     contexts, bam_paths, fasta_path, output_dir = _validate_inputs(parser, args)
     output_dir.mkdir(parents=True, exist_ok=True)
     open_log(str(output_dir / "MeHscreening.log"))
-    logm("MeH {}: {} BAM file(s), contexts {}".format(
-        VERSION, len(bam_paths), ", ".join(contexts)))
+    worker_count = min(args.cores, len(bam_paths) * len(contexts))
+    logm("MeH {}: {} BAM file(s), contexts {}; {} parallel job(s)".format(
+        VERSION, len(bam_paths), ", ".join(contexts), worker_count))
     try:
         jobs = [delayed(scan_bam)(
             bam, fasta_path, output_dir, context, args.windowsize, args.opt,
-            args.mlv, args.dist, args.meh, args.imp, args.quiet, args.seed)
+            args.mlv, args.dist, args.meh, args.imp, args.quiet, args.seed,
+            args.progress_every)
             for context in contexts for bam in bam_paths]
-        stats = Parallel(n_jobs=min(args.cores, len(jobs)))(jobs)
+        stats = Parallel(n_jobs=worker_count)(jobs)
         samples = [path.stem for path in bam_paths]
         for context in contexts:
             _merge_context(context, samples, output_dir, args.mlv)
